@@ -11,10 +11,16 @@
                     <h4 class="fw-bold text-light m-0 fs-5"><i class="fa-solid fa-bowl-food text-info me-2"></i>Alimentos</h4>
                     <p class="text-secondary small m-0">Valores nutricionales por porción</p>
                 </div>
-                <a href="{% url 'add_food' %}" class="btn btn-success btn-sm d-flex align-items-center gap-1 px-3">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>Crear Alimento</span>
-                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'add_food' %}" class="btn btn-outline-info btn-sm d-flex align-items-center gap-1 px-3">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Crear con IA</span>
+                    </a>
+                    <a href="{% url 'add_food' %}" class="btn btn-success btn-sm d-flex align-items-center gap-1 px-3">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Manual</span>
+                    </a>
+                </div>
             </div>
 
             <form method="get" class="m-0">
@@ -65,7 +71,12 @@
             </div>
             {% empty %}
             <div class="card p-4 text-center text-secondary">
-                No se encontraron alimentos.
+                <p class="mb-2">No se encontraron alimentos.</p>
+                {% if q %}
+                <a href="{% url 'add_food' %}?q={{ q|urlencode }}" class="btn btn-outline-info btn-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Calcular "{{ q }}" con IA
+                </a>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -120,7 +131,12 @@
                         {% empty %}
                         <tr>
                             <td colspan="8" class="text-center py-4 text-secondary">
-                                No se encontraron alimentos que coincidan con la búsqueda.
+                                <p class="mb-2">No se encontraron alimentos que coincidan con la búsqueda.</p>
+                                {% if q %}
+                                <a href="{% url 'add_food' %}?q={{ q|urlencode }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Calcular y crear "{{ q }}" con IA
+                                </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

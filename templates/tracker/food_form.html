@@ -4,13 +4,45 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-6 col-md-8">
-        <div class="card">
-            <div class="card-header py-3">
-                <h5 class="m-0 fw-bold text-light"><i class="fa-solid fa-bowl-food text-info me-2"></i>{{ title }}</h5>
+    <div class="col-lg-7 col-md-9">
+        
+        <!-- Gemini IA Autocomplete Card -->
+        <div class="card border border-info border-opacity-50 mb-3 shadow-sm" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.9));">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-info fs-5"></i>
+                        <span class="fw-bold text-light" style="font-size: 0.95rem;">Completar con IA (Gemini 3.5 Flash Lite)</span>
+                    </div>
+                    <span class="badge bg-info-subtle text-info border border-info small" style="font-size: 0.72rem;">Autocompletar</span>
+                </div>
+                <p class="text-secondary small mb-2" style="font-size: 0.82rem;">
+                    Escribe el nombre o plato (ej: <em>"Milanesa de ternera al horno"</em>, <em>"Barra de cereal con chocolate"</em> o <em>"Ensalada césar con pollo"</em>) y la IA calculará la porción, calorías y macros por ti.
+                </p>
+                <div class="input-group">
+                    <input type="text" id="aiFoodSearchInput" class="form-control" placeholder="Escribe el alimento o receta..." onkeydown="if(event.key==='Enter'){ event.preventDefault(); fetchAiNutrition(); }">
+                    <button type="button" id="btnFoodVoice" class="btn btn-outline-secondary px-3" onclick="toggleFoodVoice()" title="Dictar por voz" style="display: none;">
+                        <i class="fa-solid fa-microphone text-info"></i>
+                    </button>
+                    <button type="button" id="btnRunAiFood" class="btn btn-primary fw-bold px-3 d-flex align-items-center gap-1" onclick="fetchAiNutrition()">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span class="d-none d-sm-inline">Calcular con IA</span>
+                    </button>
+                </div>
+                <div id="aiFoodSpinner" class="mt-2 text-center text-info small d-none">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span class="fw-bold">Consultando valores nutricionales a Gemini 3.5 Flash Lite...</span>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <form method="post">
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                <h5 class="m-0 fw-bold text-light fs-6"><i class="fa-solid fa-bowl-food text-info me-2"></i>{{ title }}</h5>
+                <span class="badge bg-secondary-subtle text-secondary small">Formulario</span>
+            </div>
+            <div class="card-body p-3 p-md-4">
+                <form method="post" id="foodForm">
                     {% csrf_token %}
 
                     <div class="mb-3">
@@ -27,12 +59,12 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label for="{{ form.serving_size.id_for_label }}" class="form-label text-secondary small fw-bold">{{ form.serving_size.label }}</label>
+                            <label for="{{ form.serving_size.id_for_label }}" class="form-label text-secondary small fw-bold">{{ form.serving_size.label }} (g/ml)</label>
                             {{ form.serving_size }}
                             {% if form.serving_size.errors %}<div class="text-danger small mt-1">{{ form.serving_size.errors }}</div>{% endif %}
                         </div>
                         <div class="col-6">
-                            <label for="{{ form.calories.id_for_label }}" class="form-label text-secondary small fw-bold">{{ form.calories.label }}</label>
+                            <label for="{{ form.calories.id_for_label }}" class="form-label text-success small fw-bold">{{ form.calories.label }} (kcal)</label>
                             {{ form.calories }}
                             {% if form.calories.errors %}<div class="text-danger small mt-1">{{ form.calories.errors }}</div>{% endif %}
                         </div>
@@ -40,15 +72,15 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-4">
-                            <label for="{{ form.protein.id_for_label }}" class="form-label text-info small fw-bold">{{ form.protein.label }}</label>
+                            <label for="{{ form.protein.id_for_label }}" class="form-label text-info small fw-bold">{{ form.protein.label }} (g)</label>
                             {{ form.protein }}
                         </div>
                         <div class="col-4">
-                            <label for="{{ form.carbs.id_for_label }}" class="form-label text-warning small fw-bold">{{ form.carbs.label }}</label>
+                            <label for="{{ form.carbs.id_for_label }}" class="form-label text-warning small fw-bold">{{ form.carbs.label }} (g)</label>
                             {{ form.carbs }}
                         </div>
                         <div class="col-4">
-                            <label for="{{ form.fat.id_for_label }}" class="form-label text-danger small fw-bold">{{ form.fat.label }}</label>
+                            <label for="{{ form.fat.id_for_label }}" class="form-label text-danger small fw-bold">{{ form.fat.label }} (g)</label>
                             {{ form.fat }}
                         </div>
                     </div>
@@ -62,7 +94,7 @@
 
                     <div class="d-flex justify-content-between gap-2">
                         <a href="{% url 'food_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success px-4">
+                        <button type="submit" class="btn btn-success px-4 fw-bold">
                             <i class="fa-solid fa-check me-1"></i>Guardar Alimento
                         </button>
                     </div>
@@ -71,4 +103,123 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function getCsrfToken() {
+        const inputToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (inputToken) return inputToken;
+        const cookieValue = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        return cookieValue || '';
+    }
+
+    // Voice dictation
+    let foodSpeechRec = null;
+    let isRecordingFood = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const btnVoice = document.getElementById('btnFoodVoice');
+        if (SpeechRec && btnVoice) {
+            btnVoice.style.display = 'inline-block';
+            foodSpeechRec = new SpeechRec();
+            foodSpeechRec.lang = 'es-ES';
+            foodSpeechRec.onresult = (e) => {
+                document.getElementById('aiFoodSearchInput').value = e.results[0][0].transcript;
+                stopFoodVoice();
+                fetchAiNutrition();
+            };
+            foodSpeechRec.onerror = () => stopFoodVoice();
+            foodSpeechRec.onend = () => stopFoodVoice();
+        }
+
+        // Auto trigger if URL query param ?q=... is passed
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get('q');
+        if (query) {
+            document.getElementById('aiFoodSearchInput').value = query;
+            fetchAiNutrition();
+        }
+    });
+
+    function toggleFoodVoice() {
+        if (!foodSpeechRec) return;
+        if (isRecordingFood) {
+            stopFoodVoice();
+        } else {
+            isRecordingFood = true;
+            document.getElementById('btnFoodVoice').classList.add('btn-danger', 'animate-pulse');
+            foodSpeechRec.start();
+        }
+    }
+
+    function stopFoodVoice() {
+        isRecordingFood = false;
+        document.getElementById('btnFoodVoice')?.classList.remove('btn-danger', 'animate-pulse');
+        try { foodSpeechRec?.stop(); } catch(e) {}
+    }
+
+    async function fetchAiNutrition() {
+        const query = document.getElementById('aiFoodSearchInput').value.trim();
+        const spinner = document.getElementById('aiFoodSpinner');
+        const btn = document.getElementById('btnRunAiFood');
+
+        if (!query) {
+            alert('Por favor escribe el nombre de un alimento para autocompletar.');
+            document.getElementById('aiFoodSearchInput').focus();
+            return;
+        }
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        try {
+            const resp = await fetch('{% url "ai_estimate_food" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ query: query })
+            });
+
+            const data = await resp.json();
+            if (data.success) {
+                // Populate inputs
+                const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+                const brandInput = document.getElementById('{{ form.brand_or_notes.id_for_label }}');
+                const servingInput = document.getElementById('{{ form.serving_size.id_for_label }}');
+                const calInput = document.getElementById('{{ form.calories.id_for_label }}');
+                const protInput = document.getElementById('{{ form.protein.id_for_label }}');
+                const carbsInput = document.getElementById('{{ form.carbs.id_for_label }}');
+                const fatInput = document.getElementById('{{ form.fat.id_for_label }}');
+
+                if (nameInput) nameInput.value = data.name || query;
+                if (brandInput) brandInput.value = data.brand_or_notes || 'Calculado con Gemini 3.5 Flash Lite';
+                if (servingInput) servingInput.value = data.serving_size || 100.0;
+                if (calInput) calInput.value = data.calories || 0;
+                if (protInput) protInput.value = data.protein || 0;
+                if (carbsInput) carbsInput.value = data.carbs || 0;
+                if (fatInput) fatInput.value = data.fat || 0;
+
+                // Visual highlight effect
+                [nameInput, brandInput, servingInput, calInput, protInput, carbsInput, fatInput].forEach(el => {
+                    if (el) {
+                        el.style.transition = 'background-color 0.4s';
+                        el.style.backgroundColor = 'rgba(56, 189, 248, 0.2)';
+                        setTimeout(() => el.style.backgroundColor = '', 1200);
+                    }
+                });
+            } else {
+                alert('No se pudo estimar con IA: ' + (data.error || 'Error desconocido'));
+            }
+        } catch (e) {
+            alert('Error al conectar con la IA: ' + e);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+        }
+    }
+</script>
 {% endblock %}

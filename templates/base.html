@@ -263,8 +263,11 @@
             </a>
             
             {% if user.is_authenticated %}
-            <!-- Mobile Quick Settings Icon -->
+            <!-- Mobile Quick AI & Settings -->
             <div class="d-flex d-lg-none align-items-center gap-2">
+                <button type="button" class="btn btn-outline-info btn-sm p-2" data-bs-toggle="modal" data-bs-target="#globalAiModal" title="Asistente IA">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </button>
                 <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary btn-sm p-2" title="Objetivos">
                     <i class="fa-solid fa-sliders"></i>
                 </a>
@@ -302,6 +305,11 @@
                 </ul>
 
                 <div class="d-none d-lg-flex align-items-center gap-3">
+                    <button type="button" class="btn btn-outline-info btn-sm d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#globalAiModal">
+                        <i class="fa-solid fa-wand-magic-sparkles text-info"></i>
+                        <span>Asistente IA</span>
+                        <span class="badge bg-info-subtle text-info small" style="font-size: 0.65rem;">Gemini 3.5</span>
+                    </button>
                     <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
                         <i class="fa-solid fa-sliders"></i>
                         <span>Objetivos</span>
@@ -352,6 +360,181 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Mobile Floating AI Button -->
+    {% if user.is_authenticated %}
+    <div class="position-fixed d-lg-none" style="bottom: calc(72px + var(--safe-bottom)); right: 14px; z-index: 1035;">
+        <button type="button" class="btn btn-primary rounded-pill shadow-lg py-2 px-3 d-flex align-items-center gap-2 border border-info border-opacity-50" data-bs-toggle="modal" data-bs-target="#globalAiModal" style="background: linear-gradient(135deg, #0284c7, #0f766e);">
+            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-6"></i>
+            <span class="fw-bold small text-light" style="font-size: 0.8rem;">Gemini IA</span>
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Global AI Assistant Modal (Omnipresent across all pages) -->
+    {% if user.is_authenticated %}
+    <div class="modal fade" id="globalAiModal" tabindex="-1" aria-labelledby="globalAiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background-color: #1e293b; border: 1px solid #38bdf8;">
+                <div class="modal-header border-secondary border-opacity-50 py-3" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.9));">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-info fs-5"></i>
+                        <div>
+                            <h5 class="modal-title fw-bold text-light fs-6 m-0" id="globalAiModalLabel">Asistente Inteligente (Gemini 3.5 Flash Lite)</h5>
+                            <span class="text-secondary small" style="font-size: 0.75rem;">Control de comidas, cálculo de déficit y consulta nutricional</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4">
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-pills nav-fill mb-3 gap-2" id="globalAiTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-2 fw-bold text-light" id="tab-log-tab" data-bs-toggle="pill" data-bs-target="#tab-log" type="button" role="tab">
+                                <i class="fa-solid fa-bolt me-1 text-info"></i>Registrar Comida
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fw-bold text-light" id="tab-consult-tab" data-bs-toggle="pill" data-bs-target="#tab-consult" type="button" role="tab">
+                                <i class="fa-solid fa-magnifying-glass me-1 text-warning"></i>Consultar Alimento
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fw-bold text-light" id="tab-deficit-tab" data-bs-toggle="pill" data-bs-target="#tab-deficit" type="button" role="tab">
+                                <i class="fa-solid fa-calculator me-1 text-success"></i>Calcular Déficit
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="globalAiTabsContent">
+                        <!-- Tab 1: Registrar Comida -->
+                        <div class="tab-pane fade show active" id="tab-log" role="tabpanel">
+                            <p class="text-secondary small mb-2">
+                                Describe lo que comiste en lenguaje cotidiano. Gemini calculará porciones, calorías y macros y los sumará a tu diario.
+                            </p>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Momento</label>
+                                    <select id="globalAiMealType" class="form-select form-select-sm">
+                                        <option value="desayuno">Desayuno</option>
+                                        <option value="almuerzo" selected>Almuerzo</option>
+                                        <option value="merienda">Merienda</option>
+                                        <option value="cena">Cena</option>
+                                        <option value="snack">Snack</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Fecha</label>
+                                    <input type="date" id="globalAiDate" class="form-control form-control-sm text-center" value="{% now 'Y-m-d' %}">
+                                </div>
+                            </div>
+
+                            <div class="input-group mb-2">
+                                <textarea id="globalAiInput" rows="2" class="form-control" placeholder="Ej: como 3 albóndigas con una porción de puré..."></textarea>
+                                <button type="button" id="btnGlobalVoice" class="btn btn-outline-secondary px-3" onclick="toggleGlobalVoice()" title="Dictar por voz" style="display: none;">
+                                    <i class="fa-solid fa-microphone text-info"></i>
+                                </button>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="chip-qty py-1 px-2" style="font-size: 0.75rem;" onclick="setGlobalExample('como 3 albóndigas con una porción de puré')">3 albóndigas con puré</span>
+                                <span class="chip-qty py-1 px-2" style="font-size: 0.75rem;" onclick="setGlobalExample('pechuga de pollo 200g con ensalada mixta y 1 taza de arroz')">Pollo con arroz y ensalada</span>
+                                <span class="chip-qty py-1 px-2" style="font-size: 0.75rem;" onclick="setGlobalExample('café con leche y 2 tostadas de pan integral con queso untable')">Desayuno tostadas</span>
+                            </div>
+
+                            <div id="globalAiSpinner" class="text-center text-info small my-2 d-none">
+                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                <span class="fw-bold">Gemini 3.5 Flash Lite está calculando y registrando...</span>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button type="button" id="btnSubmitGlobalAi" class="btn btn-primary fw-bold px-4" onclick="submitGlobalAiMeal()">
+                                    <i class="fa-solid fa-paper-plane me-1"></i>Registrar Comida
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Consultar Alimento -->
+                        <div class="tab-pane fade" id="tab-consult" role="tabpanel">
+                            <p class="text-secondary small mb-2">
+                                Consulta calorías y macros de cualquier comida o plato antes de comerlo.
+                            </p>
+                            <div class="input-group mb-3">
+                                <input type="text" id="globalConsultInput" class="form-control" placeholder="Ej: 1 empanada de jamón y queso al horno..." onkeydown="if(event.key==='Enter') consultFoodWithAi()">
+                                <button type="button" class="btn btn-warning fw-bold px-3" onclick="consultFoodWithAi()">
+                                    <i class="fa-solid fa-magnifying-glass me-1"></i>Consultar
+                                </button>
+                            </div>
+
+                            <div id="globalConsultSpinner" class="text-center text-warning small my-2 d-none">
+                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                <span class="fw-bold">Consultando valores nutricionales a Gemini...</span>
+                            </div>
+
+                            <div id="globalConsultResult" class="p-3 rounded border border-warning border-opacity-50 d-none" style="background: rgba(251, 191, 36, 0.08);">
+                                <div class="fw-bold text-light fs-6 mb-1" id="consultFoodName">-</div>
+                                <div class="text-secondary small mb-2" id="consultFoodNotes">-</div>
+                                <div class="row g-2 text-center mb-3">
+                                    <div class="col-3">
+                                        <div class="card p-2 bg-black bg-opacity-25">
+                                            <div class="text-secondary small" style="font-size: 0.7rem;">Porción</div>
+                                            <div class="fw-bold text-light" id="consultServing">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card p-2 bg-success bg-opacity-20 border-success">
+                                            <div class="text-success small fw-bold" style="font-size: 0.7rem;">Calorías</div>
+                                            <div class="fw-bold text-success" id="consultCalories">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card p-2 bg-black bg-opacity-25">
+                                            <div class="text-info small" style="font-size: 0.7rem;">Prot</div>
+                                            <div class="fw-bold text-light" id="consultProt">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card p-2 bg-black bg-opacity-25">
+                                            <div class="text-warning small" style="font-size: 0.7rem;">Carb</div>
+                                            <div class="fw-bold text-light" id="consultCarbs">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card p-2 bg-black bg-opacity-25">
+                                            <div class="text-danger small" style="font-size: 0.7rem;">Grasa</div>
+                                            <div class="fw-bold text-light" id="consultFat">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-outline-info btn-sm" onclick="sendConsultToLogger()">
+                                        <i class="fa-solid fa-plus me-1"></i>Registrar esta comida
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Calcular Déficit -->
+                        <div class="tab-pane fade" id="tab-deficit" role="tabpanel">
+                            <div class="text-center py-3">
+                                <i class="fa-solid fa-calculator text-info display-4 mb-2"></i>
+                                <h5 class="fw-bold text-light">Calculadora Inteligente de Déficit con IA</h5>
+                                <p class="text-secondary small px-3">
+                                    El Asistente utiliza tu edad, altura, peso actual, objetivo y nivel de actividad para calcular con precisión tu TDEE y el déficit calórico ideal sin perder músculo.
+                                </p>
+                                <a href="{% url 'profile_settings' %}" class="btn btn-success fw-bold px-4 py-2">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Ir al Cuestionario de Déficit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Mobile Bottom Navigation Bar -->
     {% if user.is_authenticated %}
     <nav class="mobile-bottom-nav">
@@ -363,7 +546,7 @@
             <i class="fa-solid fa-bowl-food"></i>
             <span>Alimentos</span>
         </a>
-        <a href="javascript:void(0)" onclick="openQuickAddModal('almuerzo', 'Almuerzo')" class="mobile-nav-link fab-center">
+        <a href="javascript:void(0)" onclick="handleGlobalFabClick()" class="mobile-nav-link fab-center">
             <div class="fab-icon">
                 <i class="fa-solid fa-plus"></i>
             </div>
@@ -391,6 +574,181 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <script>
+        function getCsrfToken() {
+            const inputToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+            if (inputToken) return inputToken;
+            const cookieValue = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+            return cookieValue || '';
+        }
+
+        function handleGlobalFabClick() {
+            if (typeof openQuickAddModal === 'function') {
+                openQuickAddModal('almuerzo', 'Almuerzo');
+            } else {
+                const modalEl = document.getElementById('globalAiModal');
+                if (modalEl) {
+                    const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    m.show();
+                }
+            }
+        }
+
+        function setGlobalExample(text) {
+            const el = document.getElementById('globalAiInput');
+            if (el) {
+                el.value = text;
+                el.focus();
+            }
+        }
+
+        // Voice dictation for Global AI
+        let globalSpeechRec = null;
+        let isGlobalRecording = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const btnVoice = document.getElementById('btnGlobalVoice');
+            if (SpeechRec && btnVoice) {
+                btnVoice.style.display = 'inline-block';
+                globalSpeechRec = new SpeechRec();
+                globalSpeechRec.lang = 'es-ES';
+                globalSpeechRec.onresult = (e) => {
+                    const current = document.getElementById('globalAiInput').value;
+                    document.getElementById('globalAiInput').value = (current ? current + ' ' : '') + e.results[0][0].transcript;
+                    stopGlobalVoice();
+                };
+                globalSpeechRec.onerror = () => stopGlobalVoice();
+                globalSpeechRec.onend = () => stopGlobalVoice();
+            }
+        });
+
+        function toggleGlobalVoice() {
+            if (!globalSpeechRec) return;
+            if (isGlobalRecording) {
+                stopGlobalVoice();
+            } else {
+                isGlobalRecording = true;
+                document.getElementById('btnGlobalVoice').classList.add('btn-danger');
+                globalSpeechRec.start();
+            }
+        }
+
+        function stopGlobalVoice() {
+            isGlobalRecording = false;
+            document.getElementById('btnGlobalVoice')?.classList.remove('btn-danger');
+            try { globalSpeechRec?.stop(); } catch(e) {}
+        }
+
+        async function submitGlobalAiMeal() {
+            const input = document.getElementById('globalAiInput');
+            const text = input ? input.value.trim() : '';
+            const mealType = document.getElementById('globalAiMealType')?.value || 'almuerzo';
+            const date = document.getElementById('globalAiDate')?.value || '';
+            const spinner = document.getElementById('globalAiSpinner');
+            const btn = document.getElementById('btnSubmitGlobalAi');
+
+            if (!text) {
+                alert('Por favor escribe lo que comiste para que la IA lo analice.');
+                input?.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            try {
+                const resp = await fetch('{% url "ai_parse_meal" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        date: date,
+                        meal_type: mealType,
+                        auto_save: true
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.success) {
+                    if (window.location.pathname.includes('/dashboard/') || window.location.pathname === '/') {
+                        window.location.reload();
+                    } else {
+                        window.location.href = '{% url "dashboard" %}?date=' + (date || data.date);
+                    }
+                } else {
+                    alert('Error de IA: ' + (data.error || 'No se pudo analizar la comida.'));
+                }
+            } catch (e) {
+                alert('Error al comunicarse con el servidor: ' + e);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        async function consultFoodWithAi() {
+            const input = document.getElementById('globalConsultInput');
+            const query = input ? input.value.trim() : '';
+            const spinner = document.getElementById('globalConsultSpinner');
+            const resCard = document.getElementById('globalConsultResult');
+
+            if (!query) {
+                alert('Por favor escribe el nombre de un alimento.');
+                input?.focus();
+                return;
+            }
+
+            spinner.classList.remove('d-none');
+            resCard.classList.add('d-none');
+
+            try {
+                const resp = await fetch('{% url "ai_estimate_food" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('consultFoodName').innerText = data.name;
+                    document.getElementById('consultFoodNotes').innerText = data.brand_or_notes;
+                    document.getElementById('consultServing').innerText = data.serving_size + 'g';
+                    document.getElementById('consultCalories').innerText = data.calories + ' kcal';
+                    document.getElementById('consultProt').innerText = data.protein + 'g';
+                    document.getElementById('consultCarbs').innerText = data.carbs + 'g';
+                    document.getElementById('consultFat').innerText = data.fat + 'g';
+                    resCard.classList.remove('d-none');
+                } else {
+                    alert('Error al consultar: ' + (data.error || 'No se obtuvieron resultados.'));
+                }
+            } catch (e) {
+                alert('Error: ' + e);
+            } finally {
+                spinner.classList.add('d-none');
+            }
+        }
+
+        function sendConsultToLogger() {
+            const name = document.getElementById('consultFoodName')?.innerText || '';
+            const serving = document.getElementById('consultServing')?.innerText || '';
+            if (name) {
+                document.getElementById('globalAiInput').value = `${serving} de ${name}`;
+                const logTabBtn = document.getElementById('tab-log-tab');
+                if (logTabBtn) {
+                    const tab = new bootstrap.Tab(logTabBtn);
+                    tab.show();
+                }
+            }
+        }
+    </script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

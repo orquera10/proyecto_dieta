@@ -14,6 +14,8 @@ urlpatterns = [
     path('weight/', views.weight_tracker_view, name='weight_tracker'),
     path('api/foods/search/', views.api_food_search, name='api_food_search'),
     path('api/ai/parse-meal/', views.ai_parse_meal_view, name='ai_parse_meal'),
+    path('api/ai/estimate-food/', views.ai_estimate_food_view, name='ai_estimate_food'),
+    path('api/ai/calculate-deficit/', views.ai_calculate_deficit_view, name='ai_calculate_deficit'),
     path('manifest.json', views.manifest_view, name='manifest'),
     
     # Auth

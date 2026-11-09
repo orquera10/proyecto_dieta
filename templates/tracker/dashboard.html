@@ -92,9 +92,14 @@
         <div class="card">
             <div class="card-header py-2 d-flex justify-content-between align-items-center">
                 <span><i class="fa-solid fa-chart-pie me-2 text-info"></i>Balance del Día</span>
-                <a href="{% url 'profile_settings' %}" class="text-secondary small text-decoration-none">
-                    <i class="fa-solid fa-pen-to-square"></i> Metas
-                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'profile_settings' %}" class="badge bg-info-subtle text-info border border-info text-decoration-none py-1 px-2" title="Calcular déficit con IA">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Calcular Déficit IA
+                    </a>
+                    <a href="{% url 'profile_settings' %}" class="text-secondary small text-decoration-none" title="Editar metas">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                </div>
             </div>
             <div class="card-body p-3">
                 <!-- Calorie Big Numbers -->

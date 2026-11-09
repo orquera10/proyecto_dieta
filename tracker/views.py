@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db.models import Q
 from .models import UserProfile, FoodItem, MealEntry, WeightLog
 from .forms import UserProfileForm, FoodItemForm, MealEntryForm, WeightLogForm, RegisterForm
-from .gemini_service import parse_meal_with_gemini
+from .gemini_service import parse_meal_with_gemini, estimate_food_nutrition_with_gemini, calculate_deficit_with_gemini
 
 
 def register_view(request):
@@ -395,6 +395,97 @@ def ai_parse_meal_view(request):
     except Exception as e:
         logger.error(f"Error en ai_parse_meal_view: {e}")
         return JsonResponse({"error": f"Error inesperado: {str(e)}"}, status=500)
+
+
+@login_required
+def ai_estimate_food_view(request):
+    """Estima los macros y porción de un alimento con Gemini 3.5 Flash Lite para autocompletar formularios"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    import json
+    try:
+        if request.content_type == 'application/json':
+            body = json.loads(request.body.decode('utf-8'))
+        else:
+            body = request.POST
+
+        query = body.get('query', '').strip()
+        if not query:
+            return JsonResponse({"error": "Por favor indica el nombre o descripción del alimento."}, status=400)
+
+        res = estimate_food_nutrition_with_gemini(query)
+        if "error" in res:
+            return JsonResponse({"error": res["error"]}, status=500)
+
+        return JsonResponse(res)
+    except Exception as e:
+        return JsonResponse({"error": f"Error al procesar con IA: {str(e)}"}, status=500)
+
+
+@login_required
+def ai_calculate_deficit_view(request):
+    """Calcula el TDEE, déficit y macros mediante un cuestionario interactivo con Gemini 3.5 Flash Lite"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    import json
+    try:
+        if request.content_type == 'application/json':
+            body = json.loads(request.body.decode('utf-8'))
+        else:
+            body = request.POST
+
+        data = {
+            'gender': body.get('gender', 'M'),
+            'age': int(body.get('age', 25) or 25),
+            'height': float(body.get('height', 175) or 175),
+            'current_weight': float(body.get('current_weight', 80) or 80),
+            'target_weight': float(body.get('target_weight', 75) or 75),
+            'activity_level': body.get('activity_level', 'moderado'),
+            'deficit_rate': body.get('deficit_rate', 'moderado'),
+            'notes': body.get('notes', '').strip(),
+        }
+
+        apply_to_profile = body.get('apply_to_profile', False)
+        if isinstance(apply_to_profile, str):
+            apply_to_profile = apply_to_profile.lower() in ('true', '1', 'yes')
+
+        res = calculate_deficit_with_gemini(data)
+        if "error" in res:
+            return JsonResponse({"error": res["error"]}, status=500)
+
+        if apply_to_profile and res.get('success'):
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            if 'maintenance_calories' in res:
+                profile.maintenance_calories = int(res['maintenance_calories'])
+            if 'daily_calorie_target' in res:
+                profile.calorie_target = int(res['daily_calorie_target'])
+            if 'protein_target_g' in res:
+                profile.protein_target = int(res['protein_target_g'])
+            if 'carbs_target_g' in res:
+                profile.carbs_target = int(res['carbs_target_g'])
+            if 'fat_target_g' in res:
+                profile.fat_target = int(res['fat_target_g'])
+            if data['current_weight'] > 0:
+                profile.current_weight = Decimal(str(data['current_weight']))
+            if data['target_weight'] > 0:
+                profile.target_weight = Decimal(str(data['target_weight']))
+            profile.save()
+
+            # Record weight log for today
+            today = timezone.localdate()
+            WeightLog.objects.update_or_create(
+                user=request.user,
+                date=today,
+                defaults={'weight': Decimal(str(data['current_weight'])), 'notes': 'Calculado con Asistente IA'}
+            )
+
+            messages.success(request, f"🎯 ¡Metas actualizadas con IA! Nuevo objetivo: {res['daily_calorie_target']} kcal/día.")
+
+        return JsonResponse(res)
+    except Exception as e:
+        return JsonResponse({"error": f"Error: {str(e)}"}, status=500)
 
 
 def manifest_view(request):

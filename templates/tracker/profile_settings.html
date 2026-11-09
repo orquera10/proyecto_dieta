@@ -3,25 +3,220 @@
 {% block title %}Objetivos de Déficit Calórico | DeficitTracker{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header py-2 py-md-3">
-                <h5 class="m-0 fw-bold text-light fs-6"><i class="fa-solid fa-sliders text-info me-2"></i>Metas y Configuración del Déficit</h5>
+<div class="row justify-content-center g-4">
+    <div class="col-lg-9 col-xl-8">
+        
+        <!-- Interactive AI Deficit Assistant Card (Powered by Gemini 3.5 Flash Lite) -->
+        <div class="card border border-info border-opacity-50 shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.95));">
+            <div class="card-header py-3 d-flex align-items-center justify-content-between border-info border-opacity-25" style="background: rgba(14, 165, 233, 0.08);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-info fs-5"></i>
+                    <div>
+                        <h5 class="m-0 fw-bold text-light fs-6">Calculadora Inteligente de Déficit (Gemini 3.5 Flash Lite)</h5>
+                        <span class="text-secondary small" style="font-size: 0.78rem;">Calcula tu TDEE, déficit óptimo y macros respondiendo unas simples preguntas</span>
+                    </div>
+                </div>
+                <button class="btn btn-outline-info btn-sm px-3 fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#aiWizardCollapse" aria-expanded="true">
+                    <i class="fa-solid fa-chevron-down me-1"></i> Asistente
+                </button>
+            </div>
+            
+            <div class="collapse show" id="aiWizardCollapse">
+                <div class="card-body p-3 p-md-4">
+                    <div class="p-3 mb-3 rounded bg-black bg-opacity-25 border border-info border-opacity-25 text-secondary small">
+                        <i class="fa-solid fa-circle-info text-info me-1"></i>
+                        Gemini aplicará la fórmula científica <strong>Mifflin-St Jeor</strong>, ajustada por tu nivel real de actividad y estilo de vida, para recomendarte calorías sostenibles y gramos de proteína para no perder masa muscular.
+                    </div>
+
+                    <form id="aiDeficitForm" onsubmit="event.preventDefault(); calculateAiDeficit();">
+                        <div class="row g-3 mb-3">
+                            <!-- Pregunta 1: Sexo -->
+                            <div class="col-sm-6 col-md-3">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-venus-mars text-info me-1"></i>Sexo biológico</label>
+                                <select id="aiGender" class="form-select form-select-sm">
+                                    <option value="M" selected>Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+
+                            <!-- Pregunta 2: Edad -->
+                            <div class="col-sm-6 col-md-3">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-cake-candles text-info me-1"></i>Edad</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="aiAge" class="form-control" value="28" min="14" max="100">
+                                    <span class="input-group-text bg-black bg-opacity-25 text-secondary">años</span>
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 3: Altura -->
+                            <div class="col-sm-6 col-md-3">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-ruler-vertical text-info me-1"></i>Altura</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="aiHeight" class="form-control" value="175" min="100" max="230">
+                                    <span class="input-group-text bg-black bg-opacity-25 text-secondary">cm</span>
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 4: Peso Actual -->
+                            <div class="col-sm-6 col-md-3">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-weight-scale text-info me-1"></i>Peso actual</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.1" id="aiCurrentWeight" class="form-control" value="{{ profile.current_weight|default:'80' }}" min="30" max="300">
+                                    <span class="input-group-text bg-black bg-opacity-25 text-secondary">kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <!-- Pregunta 5: Peso Objetivo -->
+                            <div class="col-sm-6 col-md-4">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-bullseye text-success me-1"></i>Peso deseado</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.1" id="aiTargetWeight" class="form-control" value="{{ profile.target_weight|default:'75' }}" min="30" max="300">
+                                    <span class="input-group-text bg-black bg-opacity-25 text-secondary">kg</span>
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 6: Nivel de actividad -->
+                            <div class="col-sm-6 col-md-4">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-person-running text-warning me-1"></i>Nivel de actividad</label>
+                                <select id="aiActivity" class="form-select form-select-sm">
+                                    <option value="sedentario">Sedentario (Oficina / pocos pasos)</option>
+                                    <option value="ligero">Ligero (1-2 entrenamientos/sem)</option>
+                                    <option value="moderado" selected>Moderado (Gym 3-5 días/sem)</option>
+                                    <option value="muy_activo">Muy Activo (Intenso 6-7 días)</option>
+                                </select>
+                            </div>
+
+                            <!-- Pregunta 7: Ritmo de déficit -->
+                            <div class="col-sm-12 col-md-4">
+                                <label class="form-label text-light small fw-bold"><i class="fa-solid fa-gauge-high text-danger me-1"></i>Intensidad del déficit</label>
+                                <select id="aiDeficitRate" class="form-select form-select-sm">
+                                    <option value="suave">Suave (-15% / ~300 kcal - Sostenible)</option>
+                                    <option value="moderado" selected>Moderado (-20% / ~500 kcal - Estándar)</option>
+                                    <option value="agresivo">Agresivo (-25% / ~700 kcal - Rápido)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Pregunta 8: Rutina y notas en lenguaje natural -->
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold d-flex align-items-center justify-content-between">
+                                <span><i class="fa-solid fa-comment-dots text-info me-1"></i>¿Cómo es tu rutina cotidiana o entrenamiento? (Opcional)</span>
+                                <button type="button" id="btnDeficitVoice" class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="toggleDeficitVoice()" style="display: none; font-size: 0.75rem;">
+                                    <i class="fa-solid fa-microphone text-info me-1"></i>Dictar
+                                </button>
+                            </label>
+                            <textarea id="aiNotes" rows="2" class="form-control form-control-sm" placeholder="Ej: Trabajo 8 horas sentado, voy al gym 4 veces por semana a hacer pesas y me gusta caminar los fines de semana..."></textarea>
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="form-check m-0">
+                                <input class="form-check-input" type="checkbox" id="aiAutoApply" checked>
+                                <label class="form-check-label text-secondary small" for="aiAutoApply">
+                                    Aplicar y guardar automáticamente en mi perfil
+                                </label>
+                            </div>
+                            <button type="submit" id="btnCalculateDeficit" class="btn btn-primary fw-bold px-4 d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Calcular con Gemini IA</span>
+                            </button>
+                        </div>
+
+                        <!-- Spinner -->
+                        <div id="aiDeficitSpinner" class="mt-3 text-center text-info small d-none">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            <span class="fw-bold">Gemini 3.5 Flash Lite está calculando tu gasto metabólico y déficit personalizado...</span>
+                        </div>
+                    </form>
+
+                    <!-- Resultado de la IA -->
+                    <div id="aiDeficitResult" class="mt-4 p-3 rounded border border-success border-opacity-50 d-none" style="background: rgba(16, 185, 129, 0.08);">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-success border-opacity-25 pb-2">
+                            <div class="d-flex align-items-center gap-2 text-success fw-bold">
+                                <i class="fa-solid fa-circle-check fs-5"></i>
+                                <span>Plan de Déficit Recomendado por Gemini</span>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success" id="resModelBadge">Gemini 3.5 Flash Lite</span>
+                        </div>
+
+                        <!-- Métricas calculadas -->
+                        <div class="row g-2 mb-3 text-center">
+                            <div class="col-6 col-md-3">
+                                <div class="card p-2 bg-black bg-opacity-30 border-secondary">
+                                    <div class="text-secondary small" style="font-size: 0.72rem;">Mantenimiento (TDEE)</div>
+                                    <div class="fw-bold fs-5 text-light" id="resTDEE">-</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card p-2 bg-success bg-opacity-20 border-success">
+                                    <div class="text-success small fw-bold" style="font-size: 0.72rem;">Meta en Déficit</div>
+                                    <div class="fw-bold fs-5 text-success" id="resTargetKcal">-</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card p-2 bg-black bg-opacity-30 border-secondary">
+                                    <div class="text-secondary small" style="font-size: 0.72rem;">Déficit Diario</div>
+                                    <div class="fw-bold fs-5 text-warning" id="resDeficitKcal">-</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card p-2 bg-black bg-opacity-30 border-secondary">
+                                    <div class="text-secondary small" style="font-size: 0.72rem;">Tiempo a la Meta</div>
+                                    <div class="fw-bold fs-5 text-info" id="resWeeks">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Macros calculados -->
+                        <div class="row g-2 mb-3 text-center">
+                            <div class="col-4">
+                                <div class="card p-2 border-info border-opacity-50" style="background: rgba(56, 189, 248, 0.1);">
+                                    <div class="text-info small fw-bold" style="font-size: 0.75rem;">🥩 Proteína</div>
+                                    <div class="fw-bold text-light" id="resProtein">-</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card p-2 border-warning border-opacity-50" style="background: rgba(251, 191, 36, 0.1);">
+                                    <div class="text-warning small fw-bold" style="font-size: 0.75rem;">🍚 Carbohidratos</div>
+                                    <div class="fw-bold text-light" id="resCarbs">-</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card p-2 border-danger border-opacity-50" style="background: rgba(244, 63, 94, 0.1);">
+                                    <div class="text-danger small fw-bold" style="font-size: 0.75rem;">🥑 Grasas</div>
+                                    <div class="fw-bold text-light" id="resFat">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Análisis y tips -->
+                        <div class="p-3 rounded bg-black bg-opacity-30 border border-secondary border-opacity-25 mb-3">
+                            <div class="fw-bold text-light small mb-1"><i class="fa-solid fa-lightbulb text-warning me-1"></i>Análisis Personalizado:</div>
+                            <p class="text-secondary small mb-2" id="resSummary">-</p>
+                            <div class="fw-bold text-light small mb-1"><i class="fa-solid fa-check text-info me-1"></i>Consejos clave:</div>
+                            <ul class="text-secondary small mb-0 ps-3" id="resTipsList"></ul>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-success fw-bold px-4" onclick="applyResultsToFormAndSave()">
+                                <i class="fa-solid fa-check-double me-1"></i>Aplicar a mi Perfil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Profile / Target Settings Form -->
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                <h5 class="m-0 fw-bold text-light fs-6"><i class="fa-solid fa-sliders text-info me-2"></i>Ajuste Manual de Objetivos</h5>
+                <span class="badge bg-secondary-subtle text-secondary small">Perfil</span>
             </div>
             <div class="card-body p-3 p-md-4">
-                <form method="post">
+                <form method="post" id="manualProfileForm">
                     {% csrf_token %}
-
-                    <div class="p-3 mb-4 rounded bg-black bg-opacity-25 border border-info border-opacity-25">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-info fw-bold">
-                            <i class="fa-solid fa-calculator"></i>
-                            <span>Cálculo de Déficit</span>
-                        </div>
-                        <p class="text-secondary small mb-0">
-                            Para perder grasa de forma sostenible se suele buscar un déficit diario de entre <strong>300 a 600 kcal</strong> por debajo de tus calorías de mantenimiento.
-                        </p>
-                    </div>
 
                     <h6 class="text-uppercase text-secondary fw-bold small mb-3">1. Calorías y Déficit</h6>
                     <div class="row g-3 mb-4">
@@ -109,8 +304,8 @@
 
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25">
                         <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Volver al Diario</a>
-                        <button type="submit" class="btn btn-success px-4">
-                            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Metas
+                        <button type="submit" class="btn btn-success px-4 fw-bold">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Metas Manualmente
                         </button>
                     </div>
                 </form>
@@ -118,4 +313,170 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function getCsrfToken() {
+        const inputToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (inputToken) return inputToken;
+        const cookieValue = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        return cookieValue || '';
+    }
+
+    let lastCalculation = null;
+
+    // Voice dictation for routine notes
+    let deficitSpeechRec = null;
+    let isRecordingDeficit = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const btnVoice = document.getElementById('btnDeficitVoice');
+        if (SpeechRec && btnVoice) {
+            btnVoice.style.display = 'inline-block';
+            deficitSpeechRec = new SpeechRec();
+            deficitSpeechRec.lang = 'es-ES';
+            deficitSpeechRec.onresult = (e) => {
+                const current = document.getElementById('aiNotes').value;
+                document.getElementById('aiNotes').value = (current ? current + ' ' : '') + e.results[0][0].transcript;
+                stopDeficitVoice();
+            };
+            deficitSpeechRec.onerror = () => stopDeficitVoice();
+            deficitSpeechRec.onend = () => stopDeficitVoice();
+        }
+    });
+
+    function toggleDeficitVoice() {
+        if (!deficitSpeechRec) return;
+        if (isRecordingDeficit) {
+            stopDeficitVoice();
+        } else {
+            isRecordingDeficit = true;
+            document.getElementById('btnDeficitVoice').classList.add('btn-danger');
+            deficitSpeechRec.start();
+        }
+    }
+
+    function stopDeficitVoice() {
+        isRecordingDeficit = false;
+        document.getElementById('btnDeficitVoice')?.classList.remove('btn-danger');
+        try { deficitSpeechRec?.stop(); } catch(e) {}
+    }
+
+    async function calculateAiDeficit() {
+        const btn = document.getElementById('btnCalculateDeficit');
+        const spinner = document.getElementById('aiDeficitSpinner');
+        const resultCard = document.getElementById('aiDeficitResult');
+        const autoApply = document.getElementById('aiAutoApply').checked;
+
+        const payload = {
+            gender: document.getElementById('aiGender').value,
+            age: parseInt(document.getElementById('aiAge').value) || 25,
+            height: parseFloat(document.getElementById('aiHeight').value) || 175,
+            current_weight: parseFloat(document.getElementById('aiCurrentWeight').value) || 80,
+            target_weight: parseFloat(document.getElementById('aiTargetWeight').value) || 75,
+            activity_level: document.getElementById('aiActivity').value,
+            deficit_rate: document.getElementById('aiDeficitRate').value,
+            notes: document.getElementById('aiNotes').value.trim(),
+            apply_to_profile: autoApply
+        };
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        resultCard.classList.add('d-none');
+
+        try {
+            const resp = await fetch('{% url "ai_calculate_deficit" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await resp.json();
+            if (data.success) {
+                lastCalculation = data;
+
+                // Render metrics
+                document.getElementById('resTDEE').innerText = (data.maintenance_calories || 0) + ' kcal';
+                document.getElementById('resTargetKcal').innerText = (data.daily_calorie_target || 0) + ' kcal';
+                document.getElementById('resDeficitKcal').innerText = '-' + (data.deficit_calories || 0) + ' kcal (' + (data.deficit_percentage || 20) + '%)';
+                document.getElementById('resWeeks').innerText = (data.estimated_weeks || 12) + ' sem (' + (data.weekly_loss_kg || 0.5) + ' kg/sem)';
+                
+                document.getElementById('resProtein').innerText = (data.protein_target_g || 0) + 'g';
+                document.getElementById('resCarbs').innerText = (data.carbs_target_g || 0) + 'g';
+                document.getElementById('resFat').innerText = (data.fat_target_g || 0) + 'g';
+
+                document.getElementById('resSummary').innerText = data.summary || 'Cálculo optimizado para tu contextura y objetivo.';
+
+                const tipsList = document.getElementById('resTipsList');
+                tipsList.innerHTML = '';
+                (data.tips || []).forEach(tip => {
+                    const li = document.createElement('li');
+                    li.innerText = tip;
+                    tipsList.appendChild(li);
+                });
+
+                if (data.model) {
+                    document.getElementById('resModelBadge').innerText = data.model;
+                }
+
+                resultCard.classList.remove('d-none');
+
+                // If autoApply was checked, also populate manual fields and scroll
+                populateManualForm(data, payload);
+
+                if (autoApply) {
+                    // Success alert
+                    alert('✨ ¡Cálculo completado! Las metas han sido guardadas y aplicadas a tu perfil.');
+                }
+            } else {
+                alert('Error al calcular con IA: ' + (data.error || 'No se pudo generar el cálculo.'));
+            }
+        } catch (e) {
+            alert('Error al comunicarse con el servidor: ' + e);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+        }
+    }
+
+    function populateManualForm(data, payload) {
+        const mKcal = document.getElementById('{{ form.maintenance_calories.id_for_label }}');
+        const cTarget = document.getElementById('{{ form.calorie_target.id_for_label }}');
+        const pTarget = document.getElementById('{{ form.protein_target.id_for_label }}');
+        const cTargetMacro = document.getElementById('{{ form.carbs_target.id_for_label }}');
+        const fTarget = document.getElementById('{{ form.fat_target.id_for_label }}');
+        const cWeight = document.getElementById('{{ form.current_weight.id_for_label }}');
+        const tWeight = document.getElementById('{{ form.target_weight.id_for_label }}');
+
+        if (mKcal && data.maintenance_calories) mKcal.value = data.maintenance_calories;
+        if (cTarget && data.daily_calorie_target) cTarget.value = data.daily_calorie_target;
+        if (pTarget && data.protein_target_g) pTarget.value = data.protein_target_g;
+        if (cTargetMacro && data.carbs_target_g) cTargetMacro.value = data.carbs_target_g;
+        if (fTarget && data.fat_target_g) fTarget.value = data.fat_target_g;
+        if (cWeight && payload.current_weight) cWeight.value = payload.current_weight;
+        if (tWeight && payload.target_weight) tWeight.value = payload.target_weight;
+
+        // Visual flash
+        [mKcal, cTarget, pTarget, cTargetMacro, fTarget, cWeight, tWeight].forEach(el => {
+            if (el) {
+                el.style.transition = 'background-color 0.4s';
+                el.style.backgroundColor = 'rgba(16, 185, 129, 0.25)';
+                setTimeout(() => el.style.backgroundColor = '', 1500);
+            }
+        });
+    }
+
+    function applyResultsToFormAndSave() {
+        if (!lastCalculation) {
+            alert('Primero realiza el cálculo con el Asistente.');
+            return;
+        }
+        document.getElementById('manualProfileForm').submit();
+    }
+</script>
 {% endblock %}

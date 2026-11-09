@@ -63,3 +63,38 @@ class DeficitTrackerTestCase(TestCase):
         self.assertTrue(data['success'])
         self.assertTrue(data['saved'])
         self.assertGreater(data['count'], 0)
+
+    def test_ai_estimate_food_endpoint(self):
+        self.client.login(username='dario_test', password='TestPassword123')
+        response = self.client.post(
+            reverse('ai_estimate_food'),
+            data={'query': 'milanesa de pollo con papas al horno'}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIn('calories', data)
+        self.assertIn('protein', data)
+
+    def test_ai_calculate_deficit_endpoint(self):
+        self.client.login(username='dario_test', password='TestPassword123')
+        response = self.client.post(
+            reverse('ai_calculate_deficit'),
+            data={
+                'gender': 'M',
+                'age': 30,
+                'height': 178,
+                'current_weight': 85,
+                'target_weight': 77,
+                'activity_level': 'moderado',
+                'deficit_rate': 'moderado',
+                'apply_to_profile': 'true'
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIn('maintenance_calories', data)
+        self.assertIn('daily_calorie_target', data)
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.calorie_target, int(data['daily_calorie_target']))
