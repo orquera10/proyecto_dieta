@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Cuenta | Déficit Calórico{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="card p-4 shadow-lg">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-user-plus fa-3x text-info mb-2"></i>
+                <h4 class="fw-bold text-light">Crear Cuenta</h4>
+                <p class="text-secondary small">Empieza a registrar tus comidas y controlar tu déficit</p>
+            </div>
+
+            {% if form.errors %}
+                <div class="alert alert-danger small py-2">
+                    Por favor revisa los errores en el formulario.
+                </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'register' %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="id_username" class="form-label text-secondary small fw-bold">Nombre de Usuario</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_email" class="form-label text-secondary small fw-bold">Correo Electrónico</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_password1" class="form-label text-secondary small fw-bold">Contraseña</label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors }}</div>{% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_password2" class="form-label text-secondary small fw-bold">Confirmar Contraseña</label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors }}</div>{% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+                    <i class="fa-solid fa-check me-2"></i>Crear Cuenta y Empezar
+                </button>
+            </form>
+
+            <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-25">
+                <span class="text-secondary small">¿Ya tienes cuenta?</span>
+                <a href="{% url 'login' %}" class="small text-info text-decoration-none fw-bold ms-1">Inicia sesión</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

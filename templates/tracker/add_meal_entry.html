@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Comida | Déficit Calórico{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card">
+            <div class="card-header py-3">
+                <h5 class="m-0 fw-bold text-light"><i class="fa-solid fa-plus-circle text-success me-2"></i>Registrar Alimento</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.date.id_for_label }}" class="form-label text-secondary small fw-bold">{{ form.date.label }}</label>
+                        {{ form.date }}
+                        {% if form.date.errors %}
+                            <div class="text-danger small mt-1">{{ form.date.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.meal_type.id_for_label }}" class="form-label text-secondary small fw-bold">{{ form.meal_type.label }}</label>
+                        {{ form.meal_type }}
+                        {% if form.meal_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.meal_type.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="{{ form.food_item.id_for_label }}" class="form-label text-secondary small fw-bold m-0">{{ form.food_item.label }}</label>
+                            <a href="{% url 'add_food' %}" class="small text-info text-decoration-none">
+                                <i class="fa-solid fa-plus me-1"></i>Crear alimento nuevo
+                            </a>
+                        </div>
+                        {{ form.food_item }}
+                        {% if form.food_item.errors %}
+                            <div class="text-danger small mt-1">{{ form.food_item.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.grams_or_amount.id_for_label }}" class="form-label text-secondary small fw-bold">{{ form.grams_or_amount.label }}</label>
+                        {{ form.grams_or_amount }}
+                        {% if form.grams_or_amount.errors %}
+                            <div class="text-danger small mt-1">{{ form.grams_or_amount.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between gap-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="fa-solid fa-check me-1"></i>Guardar en el Diario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Objetivos de Déficit Calórico | DeficitTracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header py-3">
+                <h5 class="m-0 fw-bold text-light"><i class="fa-solid fa-sliders text-info me-2"></i>Metas y Configuración del Déficit Calórico</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="p-3 mb-4 rounded bg-black bg-opacity-25 border border-info border-opacity-25">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-info fw-bold">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>Cálculo de Déficit</span>
+                        </div>
+                        <p class="text-secondary small mb-0">
+                            Para perder grasa de forma sostenible se suele buscar un déficit diario de entre <strong>300 a 600 kcal</strong> por debajo de tus calorías de mantenimiento.
+                        </p>
+                    </div>
+
+                    <h6 class="text-uppercase text-secondary fw-bold small mb-3">1. Calorías y Déficit</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.maintenance_calories.id_for_label }}" class="form-label text-secondary small fw-bold">
+                                {{ form.maintenance_calories.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.maintenance_calories }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">kcal/día</span>
+                            </div>
+                            <div class="form-text text-secondary small">Gasto calórico estimado total (TDEE).</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.calorie_target.id_for_label }}" class="form-label text-success small fw-bold">
+                                {{ form.calorie_target.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.calorie_target }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">kcal/día</span>
+                            </div>
+                            <div class="form-text text-secondary small">Calorías máximas a consumir por día.</div>
+                        </div>
+                    </div>
+
+                    <h6 class="text-uppercase text-secondary fw-bold small mb-3">2. Distribución de Macronutrientes</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="{{ form.protein_target.id_for_label }}" class="form-label text-info small fw-bold">
+                                {{ form.protein_target.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.protein_target }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">g</span>
+                            </div>
+                            <div class="form-text text-secondary small">Recomendado en déficit: ~1.8 a 2.2g por kg.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.carbs_target.id_for_label }}" class="form-label text-warning small fw-bold">
+                                {{ form.carbs_target.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.carbs_target }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">g</span>
+                            </div>
+                            <div class="form-text text-secondary small">Energía para tus entrenamientos y actividades.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.fat_target.id_for_label }}" class="form-label text-danger small fw-bold">
+                                {{ form.fat_target.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.fat_target }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">g</span>
+                            </div>
+                            <div class="form-text text-secondary small">Salud hormonal básica: ~0.6 a 1.0g por kg.</div>
+                        </div>
+                    </div>
+
+                    <h6 class="text-uppercase text-secondary fw-bold small mb-3">3. Seguimiento de Peso</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.current_weight.id_for_label }}" class="form-label text-secondary small fw-bold">
+                                {{ form.current_weight.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.current_weight }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">kg</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.target_weight.id_for_label }}" class="form-label text-secondary small fw-bold">
+                                {{ form.target_weight.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.target_weight }}
+                                <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">kg</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Volver al Diario</a>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Metas
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
