@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Déficit Tracker</string>
+    <string name="default_url">https://dieta.dario10.pw/dashboard/</string>
+    <string name="fallback_lan_url">http://192.168.1.25:8040/dashboard/</string>
+    <string name="offline_msg">Sin conexión a Internet</string>
+    <string name="retry">Reintentar</string>
+</resources>

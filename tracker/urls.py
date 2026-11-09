@@ -17,6 +17,8 @@ urlpatterns = [
     path('api/ai/estimate-food/', views.ai_estimate_food_view, name='ai_estimate_food'),
     path('api/ai/calculate-deficit/', views.ai_calculate_deficit_view, name='ai_calculate_deficit'),
     path('manifest.json', views.manifest_view, name='manifest'),
+    path('sw.js', views.service_worker_view, name='service_worker'),
+    path('.well-known/assetlinks.json', views.assetlinks_view, name='assetlinks'),
     
     # Auth
     path('login/', auth_views.LoginView.as_view(template_name='tracker/login.html'), name='login'),

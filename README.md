@@ -136,4 +136,26 @@ python manage.py createsuperuser
 # 5. Iniciar servidor de pruebas
 python manage.py runserver 0.0.0.0:8000
 ```
-Accede desde tu navegador en `http://localhost:8000` o `http://192.168.1.25:8000`.
+Accede desde tu navegador en `http://localhost:8000` o `http://192.168.1.25:8040`.
+
+---
+
+## 📱 App Móvil para Android & PWA
+
+La aplicación cuenta con dos métodos de uso en dispositivos móviles Android:
+
+### 1. App Nativa APK compilada con GitHub Actions
+El repositorio incluye un proyecto nativo Android (`android/`) y un flujo de CI/CD en `.github/workflows/build-android.yml`:
+- **Compilación automática**: Cada vez que subas cambios a `main`, GitHub Actions compila automáticamente el archivo APK (`DeficitTracker-v1.0.0.apk`).
+- **Cómo descargar el APK**:
+  1. Entra a tu repositorio en GitHub: `https://github.com/orquera10/proyecto_dieta/actions`.
+  2. Haz clic en el workflow más reciente **"Build Android APK"**.
+  3. En la sección **Artifacts**, descarga el archivo **`DeficitTracker-Android-APK`**.
+  4. Pásalo a tu celular o descárgalo directamente desde el navegador de tu móvil e instálalo.
+
+### 2. PWA (Instalación instantánea desde Chrome / Navegador)
+- Al abrir `https://dieta.dario10.pw` o `http://192.168.1.25:8040` desde Chrome en tu Android:
+  - Aparecerá el banner nativo: **"Instalar App en Android"**.
+  - O en el menú de 3 puntos de Chrome: **"Instalar aplicación"** / **"Agregar a la pantalla principal"**.
+- Se comportará al 100% como una app nativa, con icono en tu pantalla de inicio, modo pantalla completa sin barra de navegación del navegador, respuesta háptica táctil y funcionamiento offline con Service Worker.
+

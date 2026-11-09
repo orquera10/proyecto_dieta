@@ -489,15 +489,44 @@ def ai_calculate_deficit_view(request):
 
 
 def manifest_view(request):
-    """PWA Web App Manifest for mobile installation"""
+    """PWA Web App Manifest for mobile installation and Android TWA"""
     data = {
+        "id": "pw.dario10.dieta",
         "name": "Déficit Calórico Tracker",
         "short_name": "Déficit",
+        "description": "Control de déficit calórico, registro de comidas con IA y seguimiento de peso",
         "start_url": "/dashboard/",
+        "scope": "/",
         "display": "standalone",
+        "display_override": ["standalone", "window-controls-overlay"],
         "background_color": "#0f172a",
         "theme_color": "#0f172a",
         "orientation": "portrait-primary",
+        "lang": "es-ES",
+        "categories": ["health", "fitness", "lifestyle"],
+        "shortcuts": [
+            {
+                "name": "Registrar con IA",
+                "short_name": "IA Comida",
+                "description": "Registra lo que comiste con Gemini IA",
+                "url": "/dashboard/?action=ai",
+                "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png", "sizes": "192x192"}]
+            },
+            {
+                "name": "Calculadora Déficit",
+                "short_name": "Déficit",
+                "description": "Calcula tu TDEE y déficit con IA",
+                "url": "/settings/",
+                "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png", "sizes": "192x192"}]
+            },
+            {
+                "name": "Seguimiento de Peso",
+                "short_name": "Peso",
+                "description": "Registra tu peso de hoy",
+                "url": "/weight/",
+                "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png", "sizes": "192x192"}]
+            }
+        ],
         "icons": [
             {
                 "src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png",
@@ -513,5 +542,101 @@ def manifest_view(request):
             }
         ]
     }
-    return JsonResponse(data)
+    return JsonResponse(data, json_dumps_params={'ensure_ascii': False})
+
+
+def assetlinks_view(request):
+    """Digital Asset Links for Android Trusted Web Activity (TWA)"""
+    data = [{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "pw.dario10.dieta",
+            "sha256_cert_fingerprints": [
+                "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+            ]
+        }
+    }]
+    return JsonResponse(data, safe=False)
+
+
+def service_worker_view(request):
+    """Serve service worker with proper Service-Worker-Allowed header"""
+    from django.http import HttpResponse
+    sw_code = """
+const CACHE_NAME = 'deficit-tracker-v1';
+const STATIC_ASSETS = [
+    '/manifest.json',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
+    'https://cdn-icons-png.flaticon.com/512/3050/3050158.png'
+];
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(STATIC_ASSETS);
+        })
+    );
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+            );
+        })
+    );
+    self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') return;
+    
+    // Static assets cache-first
+    if (STATIC_ASSETS.some(url => event.request.url.includes(url))) {
+        event.respondWith(
+            caches.match(event.request).then(cached => cached || fetch(event.request))
+        );
+        return;
+    }
+
+    // Dynamic pages network-first with offline fallback
+    event.respondWith(
+        fetch(event.request).catch(() => {
+            return caches.match(event.request).then(cached => {
+                if (cached) return cached;
+                if (event.request.headers.get('accept')?.includes('text/html')) {
+                    return new Response(
+                        `<!DOCTYPE html>
+                        <html lang="es" data-bs-theme="dark">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Sin Conexión | Déficit Tracker</title>
+                            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                        </head>
+                        <body class="bg-dark text-light d-flex align-items-center justify-content-center min-vh-100 p-4 text-center">
+                            <div>
+                                <h1 class="display-1 text-info fw-bold mb-3">📶</h1>
+                                <h3 class="fw-bold mb-2">Sin Conexión a Internet</h3>
+                                <p class="text-secondary mb-4">Verifica tu conexión wifi o datos móviles para continuar usando Déficit Tracker.</p>
+                                <button onclick="window.location.reload()" class="btn btn-primary px-4 py-2 fw-bold">Reintentar</button>
+                            </div>
+                        </body>
+                        </html>`,
+                        { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+                    );
+                }
+            });
+        })
+    );
+});
+"""
+    response = HttpResponse(sw_code, content_type='application/javascript; charset=utf-8')
+    response['Service-Worker-Allowed'] = '/'
+    return response
 

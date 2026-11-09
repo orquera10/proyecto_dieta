@@ -41,6 +41,15 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        button, a, .btn, input, select, textarea {
+            touch-action: manipulation;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--app-bg);
@@ -346,6 +355,23 @@
 
     <!-- Main Content Area -->
     <main class="container py-3 flex-grow-1">
+        <!-- PWA / Android Install Banner -->
+        <div id="pwaInstallBanner" class="alert alert-info border border-info border-opacity-50 d-none align-items-center justify-content-between p-2 px-3 mb-3 shadow-sm rounded-4" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(16, 185, 129, 0.12));">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-brands fa-android text-success fs-4"></i>
+                <div>
+                    <div class="fw-bold text-light small">Instalar App en Android</div>
+                    <div class="text-secondary small" style="font-size: 0.75rem;">Acceso rápido, pantalla completa y modo offline</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-success btn-sm py-1 px-3 fw-bold rounded-pill" onclick="installPwaApp()">
+                    <i class="fa-solid fa-download me-1"></i>Instalar
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 rounded-circle" onclick="dismissPwaBanner()" title="Cerrar">✕</button>
+            </div>
+        </div>
+
         <!-- Toast / Alerts -->
         {% if messages %}
             {% for message in messages %}
@@ -748,6 +774,69 @@
                 }
             }
         }
+
+        // --- Android / PWA Mobile Optimizations ---
+
+        // 1. Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => console.log('PWA Service Worker registered:', reg.scope))
+                    .catch(err => console.log('SW registration error:', err));
+            });
+        }
+
+        // 2. Android PWA Install Prompt Banner
+        let deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner && !sessionStorage.getItem('pwa_dismissed')) {
+                banner.classList.remove('d-none');
+                banner.classList.add('d-flex');
+            }
+        });
+
+        function installPwaApp() {
+            if (!deferredPwaPrompt) return;
+            deferredPwaPrompt.prompt();
+            deferredPwaPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted PWA installation');
+                }
+                deferredPwaPrompt = null;
+                dismissPwaBanner();
+            });
+        }
+
+        function dismissPwaBanner() {
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) {
+                banner.classList.add('d-none');
+                banner.classList.remove('d-flex');
+            }
+            sessionStorage.setItem('pwa_dismissed', 'true');
+        }
+
+        // 3. Tactile Vibration Feedback for mobile touch
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('button, .btn, .chip-qty, .mobile-nav-link')) {
+                if (navigator.vibrate) {
+                    try { navigator.vibrate(12); } catch (err) {}
+                }
+            }
+        });
+
+        // 4. Handle Shortcut Action (e.g. ?action=ai from Android Home Screen shortcut)
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'ai') {
+                setTimeout(() => {
+                    handleGlobalFabClick();
+                }, 400);
+            }
+        });
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>
