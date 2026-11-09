@@ -23,6 +23,8 @@ jobs:
   build:
     name: Compilar APK de Android
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: 📥 Clonar repositorio
@@ -33,10 +35,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: 📱 Configurar Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 📝 Aceptar licencias del SDK de Android
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: 🔧 Permisos para Gradle Wrapper
         run: chmod +x android/gradlew
@@ -44,9 +46,7 @@ jobs:
       - name: 🚀 Compilar APK con Gradle
         run: |
           cd android
-          gradle wrapper
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 📦 Renombrar APK para descarga fácil
         run: |
@@ -60,3 +60,14 @@ jobs:
           name: DeficitTracker-Android-APK
           path: build-output/DeficitTracker-v1.0.0.apk
           retention-days: 30
+
+      - name: 🏷️ Publicar Release en GitHub con APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: v1.0.0-apk
+          name: "Deficit Tracker v1.0.0 (Android APK)"
+          body: "Descarga e instala el archivo APK directamente en tu teléfono Android."
+          files: build-output/DeficitTracker-v1.0.0.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
