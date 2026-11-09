@@ -5,13 +5,13 @@ services:
     build: .
     container_name: proyecto_dieta_web
     restart: unless-stopped
-    expose:
-      - "8000"
+    ports:
+      - "8040:8000"
     environment:
       - DEBUG=False
       - SECRET_KEY=${SECRET_KEY:-django-insecure-dieta-deficit-calorico-secret-key-change-in-production}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-dieta.dario10.pw,192.168.1.25,localhost,127.0.0.1}
-      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-https://dieta.dario10.pw,http://dieta.dario10.pw,http://192.168.1.25:8000,http://192.168.1.25}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-https://dieta.dario10.pw,http://dieta.dario10.pw,http://192.168.1.25:8040,http://192.168.1.25,http://localhost:8040}
       - DATABASE_URL=${DATABASE_URL:-postgres://postgres:6Ic19aZIVRd8nSTyPtsRx7L1tbjzyp08jTNRQFM1fJ1o3lfFIngjrZemRfdPzSHX@u0400w8wco8okgs08sco8g8g:5432/postgres}
     networks:
       - coolify

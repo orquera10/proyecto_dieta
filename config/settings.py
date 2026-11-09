@@ -38,9 +38,12 @@ else:
     CSRF_TRUSTED_ORIGINS = [
         'https://dieta.dario10.pw',
         'http://dieta.dario10.pw',
+        'http://192.168.1.25:8040',
         'http://192.168.1.25:8000',
         'http://192.168.1.25',
+        'http://localhost:8040',
         'http://localhost:8000',
+        'http://127.0.0.1:8040',
         'http://127.0.0.1:8000'
     ]
 
