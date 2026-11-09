@@ -281,3 +281,32 @@ def api_food_search(request):
             'fat': float(f.fat),
         })
     return JsonResponse({'results': results})
+
+
+def manifest_view(request):
+    """PWA Web App Manifest for mobile installation"""
+    data = {
+        "name": "Déficit Calórico Tracker",
+        "short_name": "Déficit",
+        "start_url": "/dashboard/",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#0f172a",
+        "orientation": "portrait-primary",
+        "icons": [
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    return JsonResponse(data)
+

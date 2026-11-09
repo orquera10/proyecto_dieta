@@ -38,7 +38,7 @@ class DeficitTrackerTestCase(TestCase):
         self.client.login(username='dario_test', password='TestPassword123')
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Balance Calórico Diario')
+        self.assertContains(response, 'Balance del Día')
 
     def test_deficit_calculation(self):
         self.assertEqual(self.profile.planned_deficit(), 500)

@@ -2,8 +2,18 @@
 <html lang="es" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>{% block title %}DeficitTracker | Control de Comidas y Déficit Calórico{% endblock %}</title>
+
+    <!-- Mobile & PWA Meta Tags -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Déficit">
+    <link rel="manifest" href="{% url 'manifest' %}">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3050/3050158.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3050/3050158.png">
+
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome 6 Icons -->
@@ -22,6 +32,13 @@
             --accent-orange: #f59e0b;
             --accent-purple: #a855f7;
             --accent-red: #ef4444;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
         body {
@@ -31,6 +48,13 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding-bottom: calc(75px + var(--safe-bottom));
+        }
+
+        @media (min-width: 992px) {
+            body {
+                padding-bottom: 0;
+            }
         }
 
         .navbar-brand {
@@ -56,10 +80,26 @@
             font-weight: 700;
         }
 
+        /* Mobile touch target minimum 48px */
+        .btn, .form-control, .form-select {
+            min-height: 48px;
+            font-size: 16px; /* Prevents auto zoom in iOS */
+        }
+
+        .btn-sm {
+            min-height: 38px;
+            font-size: 0.875rem;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+            transition: transform 0.05s ease;
+        }
+
         .btn-success {
             background-color: var(--accent-green);
             border-color: var(--accent-green);
-            font-weight: 600;
+            font-weight: 700;
         }
         .btn-success:hover {
             background-color: #059669;
@@ -69,7 +109,7 @@
         .btn-primary {
             background-color: #0284c7;
             border-color: #0284c7;
-            font-weight: 600;
+            font-weight: 700;
         }
         .btn-primary:hover {
             background-color: #0369a1;
@@ -99,6 +139,7 @@
             font-weight: 600;
             padding: 0.35rem 0.65rem;
             border-radius: 0.5rem;
+            display: inline-block;
         }
 
         .macro-p { background-color: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
@@ -109,7 +150,6 @@
             background-color: #0f172a;
             border-color: #334155;
             color: #f8fafc;
-            min-height: 44px;
         }
         .form-control:focus, .form-select:focus {
             background-color: #0f172a;
@@ -118,35 +158,42 @@
             box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.2);
         }
 
-        /* Mobile bottom nav */
+        /* Mobile bottom navigation with Safe Area */
         .mobile-bottom-nav {
-            display: none;
+            display: flex;
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: #1e293b;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-top: 1px solid #334155;
-            z-index: 1030;
-            padding: 0.5rem 0;
+            z-index: 1040;
+            padding-top: 0.5rem;
+            padding-bottom: calc(0.5rem + var(--safe-bottom));
+            justify-content: space-around;
+            align-items: center;
         }
-        @media (max-width: 768px) {
+
+        @media (min-width: 992px) {
             .mobile-bottom-nav {
-                display: flex;
-                justify-content: space-around;
-            }
-            body {
-                padding-bottom: 70px;
+                display: none !important;
             }
         }
+
         .mobile-nav-link {
             color: #94a3b8;
             font-size: 0.75rem;
+            font-weight: 600;
             text-decoration: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
+            gap: 3px;
+            padding: 4px 12px;
+            border-radius: 0.75rem;
+            transition: color 0.15s ease, transform 0.1s ease;
         }
         .mobile-nav-link.active, .mobile-nav-link:hover {
             color: #38bdf8;
@@ -154,19 +201,83 @@
         .mobile-nav-link i {
             font-size: 1.25rem;
         }
+        .mobile-nav-link.fab-center {
+            color: #fff;
+            margin-top: -24px;
+        }
+        .mobile-nav-link.fab-center .fab-icon {
+            background: linear-gradient(135deg, #10b981, #059669);
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            border: 3px solid #0f172a;
+        }
+        .mobile-nav-link.fab-center .fab-icon i {
+            font-size: 1.5rem;
+        }
+
+        /* Mobile cards for meal entries */
+        .mobile-meal-entry {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Chips for quick grams selection in modal */
+        .chip-qty {
+            cursor: pointer;
+            padding: 6px 12px;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .chip-qty:active, .chip-qty.active {
+            background-color: #10b981;
+            border-color: #10b981;
+            color: #fff;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <!-- Top Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark border-bottom border-secondary border-opacity-25" style="background-color: #1e293b;">
+    <nav class="navbar navbar-expand-lg navbar-dark border-bottom border-secondary border-opacity-25 sticky-top" style="background-color: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'dashboard' %}">
                 <i class="fa-solid fa-fire-flame-curved fa-lg"></i>
                 <span>Déficit Calórico</span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            {% if user.is_authenticated %}
+            <!-- Mobile Quick Settings Icon -->
+            <div class="d-flex d-lg-none align-items-center gap-2">
+                <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary btn-sm p-2" title="Objetivos">
+                    <i class="fa-solid fa-sliders"></i>
+                </a>
+                <form action="{% url 'logout' %}" method="post" class="d-inline m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm p-2" title="Cerrar sesión">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <button class="navbar-toggler d-none d-lg-block" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
@@ -190,12 +301,12 @@
                     </li>
                 </ul>
 
-                <div class="d-flex align-items-center gap-3">
-                    <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" title="Configurar objetivos">
+                <div class="d-none d-lg-flex align-items-center gap-3">
+                    <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
                         <i class="fa-solid fa-sliders"></i>
                         <span>Objetivos</span>
                     </a>
-                    <span class="text-secondary small d-none d-md-inline">|</span>
+                    <span class="text-secondary small">|</span>
                     <div class="dropdown">
                         <button class="btn btn-outline-info btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
                             <i class="fa-solid fa-user-circle"></i>
@@ -226,11 +337,11 @@
     </nav>
 
     <!-- Main Content Area -->
-    <main class="container py-4 flex-grow-1">
+    <main class="container py-3 flex-grow-1">
         <!-- Toast / Alerts -->
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
                     <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% elif message.tags == 'danger' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
                     <div>{{ message }}</div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -248,25 +359,31 @@
             <i class="fa-solid fa-calendar-day"></i>
             <span>Diario</span>
         </a>
-        <a href="{% url 'add_meal_entry' %}" class="mobile-nav-link">
-            <i class="fa-solid fa-circle-plus text-success" style="font-size: 1.6rem; margin-top: -6px;"></i>
-            <span>Registrar</span>
-        </a>
         <a href="{% url 'food_list' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'food_list' %}active{% endif %}">
             <i class="fa-solid fa-bowl-food"></i>
             <span>Alimentos</span>
+        </a>
+        <a href="javascript:void(0)" onclick="openQuickAddModal('almuerzo', 'Almuerzo')" class="mobile-nav-link fab-center">
+            <div class="fab-icon">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <span>Registrar</span>
         </a>
         <a href="{% url 'weight_tracker' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'weight_tracker' %}active{% endif %}">
             <i class="fa-solid fa-weight-scale"></i>
             <span>Peso</span>
         </a>
+        <a href="{% url 'profile_settings' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'profile_settings' %}active{% endif %}">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Metas</span>
+        </a>
     </nav>
     {% endif %}
 
-    <!-- Footer -->
-    <footer class="py-3 border-top border-secondary border-opacity-25 mt-auto text-center text-secondary small">
+    <!-- Footer for Desktop -->
+    <footer class="py-3 border-top border-secondary border-opacity-25 mt-auto text-center text-secondary small d-none d-lg-block">
         <div class="container">
-            <span>Déficit Calórico Tracker &copy; 2026 | Vinculado a PostgreSQL Coolify & Cloudflare (dieta.dario10.pw)</span>
+            <span>Déficit Calórico Tracker &copy; 2026 | Vinculado a PostgreSQL Coolify en puerto 8040</span>
         </div>
     </footer>
 

@@ -3,41 +3,75 @@
 {% block title %}Biblioteca de Alimentos | Déficit Calórico{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="row g-3 g-md-4">
     <div class="col-12">
         <div class="card p-3">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <div>
-                    <h4 class="fw-bold text-light m-0"><i class="fa-solid fa-bowl-food text-info me-2"></i>Biblioteca de Alimentos</h4>
-                    <p class="text-secondary small m-0">Consulta valores nutricionales por porción y administra tus alimentos personalizados</p>
+                    <h4 class="fw-bold text-light m-0 fs-5"><i class="fa-solid fa-bowl-food text-info me-2"></i>Alimentos</h4>
+                    <p class="text-secondary small m-0">Valores nutricionales por porción</p>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="{% url 'add_food' %}" class="btn btn-success btn-sm d-flex align-items-center gap-1">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Crear Alimento</span>
-                    </a>
-                </div>
+                <a href="{% url 'add_food' %}" class="btn btn-success btn-sm d-flex align-items-center gap-1 px-3">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Crear Alimento</span>
+                </a>
             </div>
-            
-            <hr class="border-secondary border-opacity-50 my-3">
 
-            <form method="get" class="row g-2">
-                <div class="col-md-6 col-lg-5">
-                    <div class="input-group">
-                        <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
-                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre o marca...">
-                        {% if q %}
-                        <a href="{% url 'food_list' %}" class="btn btn-outline-secondary">Limpiar</a>
-                        {% endif %}
-                        <button type="submit" class="btn btn-primary">Buscar</button>
-                    </div>
+            <form method="get" class="m-0">
+                <div class="input-group">
+                    <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
+                    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar alimento (ej. pollo, arroz)...">
+                    {% if q %}
+                    <a href="{% url 'food_list' %}" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary px-3">Buscar</button>
                 </div>
             </form>
         </div>
     </div>
 
     <div class="col-12">
-        <div class="card overflow-hidden">
+        <!-- Mobile Card List View (< 768px) -->
+        <div class="d-md-none">
+            {% for food in foods %}
+            <div class="card mb-2 p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div class="fw-bold text-light fs-6">{{ food.name }}</div>
+                        {% if food.brand_or_notes %}
+                        <div class="text-secondary small" style="font-size: 0.8rem;">{{ food.brand_or_notes }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success fw-bold fs-6">
+                        {{ food.calories }} kcal
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-25">
+                    <div class="d-flex gap-1 small">
+                        <span class="badge-macro macro-p py-1 px-2" style="font-size: 0.75rem;">P: {{ food.protein }}g</span>
+                        <span class="badge-macro macro-c py-1 px-2" style="font-size: 0.75rem;">C: {{ food.carbs }}g</span>
+                        <span class="badge-macro macro-f py-1 px-2" style="font-size: 0.75rem;">G: {{ food.fat }}g</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-secondary small font-monospace">{{ food.serving_size|floatformat:0 }}g</span>
+                        {% if food.user == request.user %}
+                        <a href="{% url 'edit_food' food.id %}" class="btn btn-outline-info btn-sm p-1 px-2" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="card p-4 text-center text-secondary">
+                No se encontraron alimentos.
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Desktop Table View (>= 768px) -->
+        <div class="d-none d-md-block card overflow-hidden">
             <div class="table-responsive">
                 <table class="table table-dark table-hover mb-0 align-middle">
                     <thead class="table-secondary table-opacity-10 text-secondary small">
@@ -79,7 +113,7 @@
                                     <i class="fa-solid fa-pen"></i>
                                 </a>
                                 {% else %}
-                                <span class="text-secondary small fst-italic">Solo lectura</span>
+                                <span class="text-secondary small fst-italic">Global</span>
                                 {% endif %}
                             </td>
                         </tr>
