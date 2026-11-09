@@ -3,21 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'android/**'
-      - '.github/workflows/build-android.yml'
-      - 'templates/**'
-      - 'static/**'
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Tipo de compilación'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
 
 jobs:
   build:
@@ -36,23 +22,26 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: 🐘 Configurar Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.6
+
       - name: 📝 Aceptar licencias del SDK de Android
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: 🔧 Permisos para Gradle Wrapper
-        run: chmod +x android/gradlew
-
       - name: 🚀 Compilar APK con Gradle
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 📦 Renombrar APK para descarga fácil
         run: |
           mkdir -p build-output
           cp android/app/build/outputs/apk/debug/app-debug.apk build-output/DeficitTracker-v1.0.0.apk
-          echo "APK generado exitosamente en build-output/DeficitTracker-v1.0.0.apk"
+          echo "APK generado exitosamente"
 
       - name: 📤 Subir APK como artefacto de GitHub
         uses: actions/upload-artifact@v4

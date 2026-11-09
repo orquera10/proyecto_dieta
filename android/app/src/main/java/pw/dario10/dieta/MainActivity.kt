@@ -11,30 +11,30 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.webkit.*
+import android.widget.Button
+import android.widget.ProgressBar
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import pw.dario10.dieta.databinding.ActivityMainBinding
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var webView: WebView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var progressBar: ProgressBar
+    private lateinit var layoutOffline: View
+    private lateinit var btnRetry: Button
+
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     private val defaultUrl: String
         get() = getString(R.string.default_url)
 
-    private val lanFallbackUrl: String
-        get() = getString(R.string.fallback_lan_url)
-
-    // Permission request for audio recording (dictating meals to Gemini)
     private val requestAudioPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            // Audio permission handled for Web Speech API
-        }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ -> }
 
-    // File chooser launcher
     private val fileChooserLauncher =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
             filePathCallback?.onReceiveValue(uris?.toTypedArray())
@@ -43,8 +43,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
+
+        webView = findViewById(R.id.webView)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
+        progressBar = findViewById(R.id.progressBar)
+        layoutOffline = findViewById(R.id.layoutOffline)
+        btnRetry = findViewById(R.id.btnRetry)
 
         checkPermissions()
         setupWebView()
@@ -63,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
-        binding.webView.apply {
+        webView.apply {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -76,7 +81,6 @@ class MainActivity : AppCompatActivity() {
                 userAgentString = "${settings.userAgentString} DeficitTrackerApp/1.0.0 (Android)"
             }
 
-            // Cookie management for staying logged in
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
             cookieManager.setAcceptThirdPartyCookies(this, true)
@@ -84,14 +88,14 @@ class MainActivity : AppCompatActivity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
-                    binding.progressBar.visibility = View.VISIBLE
-                    binding.layoutOffline.visibility = View.GONE
+                    progressBar.visibility = View.VISIBLE
+                    layoutOffline.visibility = View.GONE
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    binding.progressBar.visibility = View.GONE
-                    binding.swipeRefreshLayout.isRefreshing = false
+                    progressBar.visibility = View.GONE
+                    swipeRefreshLayout.isRefreshing = false
                 }
 
                 override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
@@ -108,12 +112,12 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onShowFileChooser(
-                    webView: WebView?,
-                    filePathCallback: ValueCallback<Array<Uri>>?,
-                    fileChooserParams: FileChooserParams?
+                    wv: WebView?,
+                    fpc: ValueCallback<Array<Uri>>?,
+                    params: FileChooserParams?
                 ): Boolean {
-                    this@MainActivity.filePathCallback?.onReceiveValue(null)
-                    this@MainActivity.filePathCallback = filePathCallback
+                    filePathCallback?.onReceiveValue(null)
+                    filePathCallback = fpc
                     fileChooserLauncher.launch("*/*")
                     return true
                 }
@@ -122,17 +126,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSwipeRefresh() {
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.accent, R.color.primary)
-        binding.swipeRefreshLayout.setOnRefreshListener {
-            binding.webView.reload()
+        swipeRefreshLayout.setColorSchemeResources(R.color.accent, R.color.primary)
+        swipeRefreshLayout.setOnRefreshListener {
+            webView.reload()
         }
     }
 
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (binding.webView.canGoBack()) {
-                    binding.webView.goBack()
+                if (webView.canGoBack()) {
+                    webView.goBack()
                 } else {
                     finish()
                 }
@@ -141,8 +145,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRetryButton() {
-        binding.btnRetry.setOnClickListener {
-            binding.layoutOffline.visibility = View.GONE
+        btnRetry.setOnClickListener {
+            layoutOffline.visibility = View.GONE
             loadAppUrl()
         }
     }
@@ -152,14 +156,13 @@ class MainActivity : AppCompatActivity() {
             showOfflineLayout()
             return
         }
-
-        binding.webView.loadUrl(defaultUrl)
+        webView.loadUrl(defaultUrl)
     }
 
     private fun showOfflineLayout() {
-        binding.progressBar.visibility = View.GONE
-        binding.swipeRefreshLayout.isRefreshing = false
-        binding.layoutOffline.visibility = View.VISIBLE
+        progressBar.visibility = View.GONE
+        swipeRefreshLayout.isRefreshing = false
+        layoutOffline.visibility = View.VISIBLE
     }
 
     private fun isOnline(): Boolean {
