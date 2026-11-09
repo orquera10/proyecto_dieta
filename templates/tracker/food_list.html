@@ -40,7 +40,7 @@
         <!-- Mobile Card List View (< 768px) -->
         <div class="d-md-none">
             {% for food in foods %}
-            <div class="card mb-2 p-3">
+            <div class="card mb-2 p-3 shadow-sm animate-fade-in" style="background: rgba(18, 26, 43, 0.65); border: 1px solid rgba(255, 255, 255, 0.07);">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
                         <div class="fw-bold text-light fs-6">{{ food.name }}</div>
@@ -48,22 +48,22 @@
                         <div class="text-secondary small" style="font-size: 0.8rem;">{{ food.brand_or_notes }}</div>
                         {% endif %}
                     </div>
-                    <span class="badge bg-success-subtle text-success border border-success fw-bold fs-6">
-                        {{ food.calories }} kcal
+                    <span class="badge text-success fw-bold num-font fs-6 px-3 py-1 rounded-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);">
+                        {{ food.calories }} <span style="font-size: 0.7rem;">kcal</span>
                     </span>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-25">
-                    <div class="d-flex gap-1 small">
-                        <span class="badge-macro macro-p py-1 px-2" style="font-size: 0.75rem;">P: {{ food.protein }}g</span>
-                        <span class="badge-macro macro-c py-1 px-2" style="font-size: 0.75rem;">C: {{ food.carbs }}g</span>
-                        <span class="badge-macro macro-f py-1 px-2" style="font-size: 0.75rem;">G: {{ food.fat }}g</span>
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-10">
+                    <div class="d-flex gap-1 small num-font">
+                        <span class="badge-macro macro-p py-1 px-2" style="font-size: 0.72rem;">P: {{ food.protein }}g</span>
+                        <span class="badge-macro macro-c py-1 px-2" style="font-size: 0.72rem;">C: {{ food.carbs }}g</span>
+                        <span class="badge-macro macro-f py-1 px-2" style="font-size: 0.72rem;">G: {{ food.fat }}g</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-secondary small font-monospace">{{ food.serving_size|floatformat:0 }}g</span>
+                        <span class="text-secondary small num-font">{{ food.serving_size|floatformat:0 }}g</span>
                         {% if food.user == request.user %}
-                        <a href="{% url 'edit_food' food.id %}" class="btn btn-outline-info btn-sm p-1 px-2" title="Editar">
-                            <i class="fa-solid fa-pen"></i>
+                        <a href="{% url 'edit_food' food.id %}" class="btn btn-outline-info btn-sm p-1 px-2 rounded-3" title="Editar">
+                            <i class="fa-solid fa-pen" style="font-size: 0.75rem;"></i>
                         </a>
                         {% endif %}
                     </div>

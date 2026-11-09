@@ -7,10 +7,12 @@
     <div class="col-lg-9 col-xl-8">
         
         <!-- Interactive AI Deficit Assistant Card (Powered by Gemini 3.5 Flash Lite) -->
-        <div class="card border border-info border-opacity-50 shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.95));">
-            <div class="card-header py-3 d-flex align-items-center justify-content-between border-info border-opacity-25" style="background: rgba(14, 165, 233, 0.08);">
+        <div class="card card-ai-glow shadow-lg mb-4">
+            <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-info border-opacity-25" style="background: rgba(14, 165, 233, 0.08);">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-wand-magic-sparkles text-info fs-5"></i>
+                    <div class="p-2 rounded-3 text-info" style="background: rgba(56, 189, 248, 0.15); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);">
+                        <i class="fa-solid fa-wand-magic-sparkles fs-5 flame-icon-glow"></i>
+                    </div>
                     <div>
                         <h5 class="m-0 fw-bold text-light fs-6">Calculadora Inteligente de Déficit (Gemini 3.5 Flash Lite)</h5>
                         <span class="text-secondary small" style="font-size: 0.78rem;">Calcula tu TDEE, déficit óptimo y macros respondiendo unas simples preguntas</span>
@@ -143,27 +145,27 @@
                         <!-- Métricas calculadas -->
                         <div class="row g-2 mb-3 text-center">
                             <div class="col-6 col-md-3">
-                                <div class="card p-2 bg-black bg-opacity-30 border-secondary">
-                                    <div class="text-secondary small" style="font-size: 0.72rem;">Mantenimiento (TDEE)</div>
-                                    <div class="fw-bold fs-5 text-light" id="resTDEE">-</div>
+                                <div class="card p-3" style="background: rgba(11, 17, 32, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                    <div class="text-secondary small fw-bold" style="font-size: 0.72rem;">MANTENIMIENTO (TDEE)</div>
+                                    <div class="fw-bold fs-4 text-light num-font mt-1" id="resTDEE">-</div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-3">
-                                <div class="card p-2 bg-success bg-opacity-20 border-success">
-                                    <div class="text-success small fw-bold" style="font-size: 0.72rem;">Meta en Déficit</div>
-                                    <div class="fw-bold fs-5 text-success" id="resTargetKcal">-</div>
+                                <div class="card p-3" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35);">
+                                    <div class="text-success small fw-bold" style="font-size: 0.72rem;">META EN DÉFICIT</div>
+                                    <div class="fw-bold fs-4 text-success num-font mt-1" id="resTargetKcal">-</div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-3">
-                                <div class="card p-2 bg-black bg-opacity-30 border-secondary">
-                                    <div class="text-secondary small" style="font-size: 0.72rem;">Déficit Diario</div>
-                                    <div class="fw-bold fs-5 text-warning" id="resDeficitKcal">-</div>
+                                <div class="card p-3" style="background: rgba(11, 17, 32, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                    <div class="text-secondary small fw-bold" style="font-size: 0.72rem;">DÉFICIT DIARIO</div>
+                                    <div class="fw-bold fs-4 text-warning num-font mt-1" id="resDeficitKcal">-</div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-3">
-                                <div class="card p-2 bg-black bg-opacity-30 border-secondary">
-                                    <div class="text-secondary small" style="font-size: 0.72rem;">Tiempo a la Meta</div>
-                                    <div class="fw-bold fs-5 text-info" id="resWeeks">-</div>
+                                <div class="card p-3" style="background: rgba(11, 17, 32, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                    <div class="text-secondary small fw-bold" style="font-size: 0.72rem;">TIEMPO A LA META</div>
+                                    <div class="fw-bold fs-4 text-info num-font mt-1" id="resWeeks">-</div>
                                 </div>
                             </div>
                         </div>
@@ -171,21 +173,21 @@
                         <!-- Macros calculados -->
                         <div class="row g-2 mb-3 text-center">
                             <div class="col-4">
-                                <div class="card p-2 border-info border-opacity-50" style="background: rgba(56, 189, 248, 0.1);">
+                                <div class="card p-3" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3);">
                                     <div class="text-info small fw-bold" style="font-size: 0.75rem;">🥩 Proteína</div>
-                                    <div class="fw-bold text-light" id="resProtein">-</div>
+                                    <div class="fw-bold fs-4 text-light num-font mt-1" id="resProtein">-</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="card p-2 border-warning border-opacity-50" style="background: rgba(251, 191, 36, 0.1);">
+                                <div class="card p-3" style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3);">
                                     <div class="text-warning small fw-bold" style="font-size: 0.75rem;">🍚 Carbohidratos</div>
-                                    <div class="fw-bold text-light" id="resCarbs">-</div>
+                                    <div class="fw-bold fs-4 text-light num-font mt-1" id="resCarbs">-</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="card p-2 border-danger border-opacity-50" style="background: rgba(244, 63, 94, 0.1);">
+                                <div class="card p-3" style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3);">
                                     <div class="text-danger small fw-bold" style="font-size: 0.75rem;">🥑 Grasas</div>
-                                    <div class="fw-bold text-light" id="resFat">-</div>
+                                    <div class="fw-bold fs-4 text-light num-font mt-1" id="resFat">-</div>
                                 </div>
                             </div>
                         </div>

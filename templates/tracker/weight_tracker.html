@@ -41,9 +41,9 @@
                 </form>
 
                 {% if user.profile.target_weight %}
-                <div class="mt-4 p-3 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 text-center">
-                    <div class="text-secondary small">Meta Final de Peso</div>
-                    <div class="fs-4 fw-bold text-info">{{ user.profile.target_weight }} kg</div>
+                <div class="mt-4 p-3 rounded-4 text-center" style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.3); box-shadow: 0 0 15px rgba(14, 165, 233, 0.1);">
+                    <div class="text-secondary small fw-bold" style="font-size: 0.72rem;">META FINAL DE PESO</div>
+                    <div class="fs-3 fw-bold text-info num-font mt-1" style="filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));">{{ user.profile.target_weight }} <span class="small" style="font-size: 0.85rem;">kg</span></div>
                 </div>
                 {% endif %}
             </div>
