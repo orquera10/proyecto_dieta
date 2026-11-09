@@ -5,8 +5,8 @@ services:
     build: .
     container_name: proyecto_dieta_web
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - DEBUG=False
       - SECRET_KEY=${SECRET_KEY:-django-insecure-dieta-deficit-calorico-secret-key-change-in-production}
