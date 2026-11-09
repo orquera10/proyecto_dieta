@@ -21,12 +21,15 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
 if allowed_hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+    if 'testserver' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('testserver')
 else:
     ALLOWED_HOSTS = [
         'dieta.dario10.pw',
         '192.168.1.25',
         'localhost',
         '127.0.0.1',
+        'testserver',
         '*'
     ]
 

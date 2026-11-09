@@ -14,7 +14,7 @@
                     </a>
                     
                     <form method="get" action="" class="d-flex align-items-center gap-1 m-0 flex-grow-1 flex-sm-grow-0">
-                        <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control form-control-sm text-center fw-bold" style="min-width: 135px;" onchange="this.form.submit()">
+                        <input type="date" name="date" id="selectedDateInput" value="{{ selected_date|date:'Y-m-d' }}" class="form-control form-control-sm text-center fw-bold" style="min-width: 135px;" onchange="this.form.submit()">
                     </form>
 
                     <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm px-3" title="Día siguiente">
@@ -40,6 +40,48 @@
                         <i class="fa-solid fa-plus"></i>
                         <span>Añadir</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Quick Logger Card (Powered by Gemini 3.5 Flash Lite) -->
+    <div class="col-12">
+        <div class="card border border-info border-opacity-50 shadow-sm" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.9));">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-info fs-5"></i>
+                        <span class="fw-bold text-light" style="font-size: 0.95rem;">Registrar con IA (Gemini 3.5 Flash Lite)</span>
+                    </div>
+                    <span class="badge bg-info-subtle text-info border border-info small" style="font-size: 0.72rem;">
+                        <i class="fa-solid fa-bolt me-1"></i>Cálculo Instantáneo
+                    </span>
+                </div>
+
+                <div class="input-group mb-2">
+                    <input type="text" id="aiMealInput" class="form-control" placeholder="Ej: como 3 albóndigas con una porción de puré..." onkeydown="if(event.key === 'Enter') submitAiMeal()">
+                    <button type="button" id="btnVoiceInput" class="btn btn-outline-secondary px-3" onclick="toggleVoiceInput()" title="Dictar por voz" style="display: none;">
+                        <i class="fa-solid fa-microphone text-info"></i>
+                    </button>
+                    <button type="button" id="btnAiSubmit" class="btn btn-primary d-flex align-items-center gap-1 px-3 fw-bold" onclick="submitAiMeal()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span class="d-none d-sm-inline">Registrar</span>
+                    </button>
+                </div>
+
+                <!-- Chips de ejemplos rápidos -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="text-secondary small fst-italic" style="font-size: 0.75rem;">Ejemplos:</span>
+                    <span class="chip-qty py-1 px-2" style="font-size: 0.75rem;" onclick="setAiExample('como 3 albóndigas con una porción de puré')">3 albóndigas con puré</span>
+                    <span class="chip-qty py-1 px-2" style="font-size: 0.75rem;" onclick="setAiExample('pechuga de pollo 200g con ensalada mixta y 1 taza de arroz')">Pollo con arroz y ensalada</span>
+                    <span class="chip-qty py-1 px-2" style="font-size: 0.75rem;" onclick="setAiExample('café con leche y 2 tostadas de pan integral con queso untable')">Desayuno con tostadas</span>
+                </div>
+
+                <!-- Loading indicator -->
+                <div id="aiLoadingIndicator" class="mt-2 text-center text-info small d-none">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span class="fw-bold">Gemini 3.5 Flash Lite está calculando gramos, calorías y macros...</span>
                 </div>
             </div>
         </div>
@@ -172,7 +214,7 @@
                 <div class="card-body p-2 p-md-0">
                     {% if meal.entries %}
                     
-                    <!-- Mobile Card List View (Visible on screens < 768px) -->
+                    <!-- Mobile Card List View (< 768px) -->
                     <div class="d-md-none">
                         {% for entry in meal.entries %}
                         <div class="mobile-meal-entry">
@@ -196,7 +238,7 @@
                         {% endfor %}
                     </div>
 
-                    <!-- Desktop Table View (Visible on screens >= 768px) -->
+                    <!-- Desktop Table View (>= 768px) -->
                     <div class="d-none d-md-block table-responsive">
                         <table class="table table-dark table-hover mb-0 align-middle">
                             <thead class="table-secondary table-opacity-10 text-secondary small">
@@ -253,105 +295,148 @@
     </div>
 </div>
 
-<!-- Modal Quick Add Food (Mobile Bottom-Sheet Optimized) -->
+<!-- Modal Quick Add Food (Mobile Bottom-Sheet Optimized with Manual & AI modes) -->
 <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border border-secondary" style="background-color: #1e293b;">
-            <form method="post" action="{% url 'add_meal_entry' %}">
-                {% csrf_token %}
-                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-                <input type="hidden" name="meal_type" id="modalMealType">
-
-                <div class="modal-header border-secondary border-opacity-25 py-3">
-                    <h5 class="modal-title fw-bold text-light" id="quickAddModalLabel">
+            <!-- Modal Tabs: Manual vs IA -->
+            <div class="p-3 pb-0 border-bottom border-secondary border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="modal-title fw-bold text-light m-0" id="quickAddModalLabel">
                         <i class="fa-solid fa-plus-circle text-success me-2"></i>Añadir a <span id="modalMealTitle"></span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <ul class="nav nav-pills nav-fill mb-2" id="modalAddTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active py-1 small fw-bold" id="tab-manual-btn" data-bs-toggle="pill" data-bs-target="#tab-manual" type="button" role="tab">
+                            <i class="fa-solid fa-list me-1"></i> Catálogo
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link py-1 small fw-bold" id="tab-ai-btn" data-bs-toggle="pill" data-bs-target="#tab-ai" type="button" role="tab">
+                            <i class="fa-solid fa-wand-magic-sparkles me-1 text-info"></i> Con IA (Gemini)
+                        </button>
+                    </li>
+                </ul>
+            </div>
 
-                <div class="modal-body p-3">
-                    <!-- Search input to filter foods -->
-                    <div class="mb-3">
-                        <label for="foodSearchInput" class="form-label text-secondary small fw-bold mb-1">Buscar alimento:</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
-                            <input type="search" id="foodSearchInput" class="form-control" placeholder="Ej. pollo, huevo, avena..." oninput="filterFoodSelect()">
-                        </div>
-                    </div>
+            <div class="tab-content" id="modalAddTabContent">
+                <!-- Tab Manual -->
+                <div class="tab-pane fade show active" id="tab-manual" role="tabpanel">
+                    <form method="post" action="{% url 'add_meal_entry' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                        <input type="hidden" name="meal_type" id="modalMealType">
 
-                    <!-- Food selection -->
-                    <div class="mb-3">
-                        <label for="modalFoodSelect" class="form-label text-secondary small fw-bold mb-1">Seleccionar:</label>
-                        <select name="food_item" id="modalFoodSelect" class="form-select" required size="5" onchange="updateFoodPreview()" style="font-size: 0.9rem;">
-                            {% for food in available_foods %}
-                            <option value="{{ food.id }}" 
-                                    data-serving="{{ food.serving_size }}"
-                                    data-calories="{{ food.calories }}" 
-                                    data-prot="{{ food.protein }}" 
-                                    data-carbs="{{ food.carbs }}" 
-                                    data-fat="{{ food.fat }}">
-                                {{ food.name }}{% if food.brand_or_notes %} ({{ food.brand_or_notes }}){% endif %} - {{ food.calories }} kcal/{{ food.serving_size }}g
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="text-secondary small fst-italic" style="font-size: 0.75rem;">¿No está en la lista?</span>
-                            <a href="{% url 'add_food' %}" class="small text-info text-decoration-none fw-bold">
-                                <i class="fa-solid fa-plus me-1"></i>Crear alimento
-                            </a>
-                        </div>
-                    </div>
+                        <div class="modal-body p-3">
+                            <!-- Search input to filter foods -->
+                            <div class="mb-3">
+                                <label for="foodSearchInput" class="form-label text-secondary small fw-bold mb-1">Buscar alimento:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
+                                    <input type="search" id="foodSearchInput" class="form-control" placeholder="Ej. pollo, huevo, avena..." oninput="filterFoodSelect()">
+                                </div>
+                            </div>
 
-                    <!-- Quantity with Quick-Chips -->
-                    <div class="mb-3">
-                        <label for="modalGramsInput" class="form-label text-secondary small fw-bold mb-1">Cantidad consumida (gramos):</label>
-                        <div class="input-group mb-2">
-                            <input type="number" name="grams_or_amount" id="modalGramsInput" class="form-control fw-bold fs-5 text-center" value="100" min="1" step="1" inputmode="numeric" pattern="[0-9]*" required oninput="updateFoodPreview()">
-                            <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">g / ml</span>
-                        </div>
-                        
-                        <!-- Quick Tap Chips for Mobile -->
-                        <div class="d-flex flex-wrap gap-2 pt-1">
-                            <span class="chip-qty" onclick="setQuickGrams(30)">30g</span>
-                            <span class="chip-qty" onclick="setQuickGrams(50)">50g</span>
-                            <span class="chip-qty active" onclick="setQuickGrams(100)">100g</span>
-                            <span class="chip-qty" onclick="setQuickGrams(150)">150g</span>
-                            <span class="chip-qty" onclick="setQuickGrams(200)">200g</span>
-                            <span class="chip-qty" onclick="setQuickGrams(250)">250g</span>
-                        </div>
-                    </div>
+                            <!-- Food selection -->
+                            <div class="mb-3">
+                                <label for="modalFoodSelect" class="form-label text-secondary small fw-bold mb-1">Seleccionar:</label>
+                                <select name="food_item" id="modalFoodSelect" class="form-select" required size="5" onchange="updateFoodPreview()" style="font-size: 0.9rem;">
+                                    {% for food in available_foods %}
+                                    <option value="{{ food.id }}" 
+                                            data-serving="{{ food.serving_size }}"
+                                            data-calories="{{ food.calories }}" 
+                                            data-prot="{{ food.protein }}" 
+                                            data-carbs="{{ food.carbs }}" 
+                                            data-fat="{{ food.fat }}">
+                                        {{ food.name }}{% if food.brand_or_notes %} ({{ food.brand_or_notes }}){% endif %} - {{ food.calories }} kcal/{{ food.serving_size }}g
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="text-secondary small fst-italic" style="font-size: 0.75rem;">¿No está en la lista?</span>
+                                    <a href="{% url 'add_food' %}" class="small text-info text-decoration-none fw-bold">
+                                        <i class="fa-solid fa-plus me-1"></i>Crear alimento
+                                    </a>
+                                </div>
+                            </div>
 
-                    <!-- Live macro calculation preview -->
-                    <div id="foodPreviewCard" class="p-3 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 d-none">
-                        <div class="text-secondary small mb-2 fw-bold text-center" style="font-size: 0.75rem;">Aporte para esta porción:</div>
-                        <div class="d-flex justify-content-around text-center">
-                            <div>
-                                <div class="fs-5 fw-bold text-success" id="prevKcal">0</div>
-                                <div class="text-secondary small" style="font-size: 0.7rem;">Kcal</div>
+                            <!-- Quantity with Quick-Chips -->
+                            <div class="mb-3">
+                                <label for="modalGramsInput" class="form-label text-secondary small fw-bold mb-1">Cantidad consumida (gramos):</label>
+                                <div class="input-group mb-2">
+                                    <input type="number" name="grams_or_amount" id="modalGramsInput" class="form-control fw-bold fs-5 text-center" value="100" min="1" step="1" inputmode="numeric" pattern="[0-9]*" required oninput="updateFoodPreview()">
+                                    <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">g / ml</span>
+                                </div>
+                                
+                                <div class="d-flex flex-wrap gap-2 pt-1">
+                                    <span class="chip-qty" onclick="setQuickGrams(30)">30g</span>
+                                    <span class="chip-qty" onclick="setQuickGrams(50)">50g</span>
+                                    <span class="chip-qty active" onclick="setQuickGrams(100)">100g</span>
+                                    <span class="chip-qty" onclick="setQuickGrams(150)">150g</span>
+                                    <span class="chip-qty" onclick="setQuickGrams(200)">200g</span>
+                                    <span class="chip-qty" onclick="setQuickGrams(250)">250g</span>
+                                </div>
                             </div>
-                            <div>
-                                <div class="fs-5 fw-bold text-info" id="prevProt">0g</div>
-                                <div class="text-secondary small" style="font-size: 0.7rem;">Proteína</div>
-                            </div>
-                            <div>
-                                <div class="fs-5 fw-bold text-warning" id="prevCarbs">0g</div>
-                                <div class="text-secondary small" style="font-size: 0.7rem;">Carbos</div>
-                            </div>
-                            <div>
-                                <div class="fs-5 fw-bold text-danger" id="prevFat">0g</div>
-                                <div class="text-secondary small" style="font-size: 0.7rem;">Grasas</div>
+
+                            <!-- Live preview -->
+                            <div id="foodPreviewCard" class="p-3 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 d-none">
+                                <div class="text-secondary small mb-2 fw-bold text-center" style="font-size: 0.75rem;">Aporte para esta porción:</div>
+                                <div class="d-flex justify-content-around text-center">
+                                    <div>
+                                        <div class="fs-5 fw-bold text-success" id="prevKcal">0</div>
+                                        <div class="text-secondary small" style="font-size: 0.7rem;">Kcal</div>
+                                    </div>
+                                    <div>
+                                        <div class="fs-5 fw-bold text-info" id="prevProt">0g</div>
+                                        <div class="text-secondary small" style="font-size: 0.7rem;">Proteína</div>
+                                    </div>
+                                    <div>
+                                        <div class="fs-5 fw-bold text-warning" id="prevCarbs">0g</div>
+                                        <div class="text-secondary small" style="font-size: 0.7rem;">Carbos</div>
+                                    </div>
+                                    <div>
+                                        <div class="fs-5 fw-bold text-danger" id="prevFat">0g</div>
+                                        <div class="text-secondary small" style="font-size: 0.7rem;">Grasas</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <div class="modal-footer border-secondary border-opacity-25 p-3">
+                            <button type="button" class="btn btn-outline-secondary flex-grow-1" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success flex-grow-1">
+                                <i class="fa-solid fa-check me-1"></i>Guardar
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
-                <div class="modal-footer border-secondary border-opacity-25 p-3">
-                    <button type="button" class="btn btn-outline-secondary flex-grow-1" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success flex-grow-1">
-                        <i class="fa-solid fa-check me-1"></i>Guardar
-                    </button>
+                <!-- Tab IA (Gemini 3.5 Flash Lite) -->
+                <div class="tab-pane fade" id="tab-ai" role="tabpanel">
+                    <div class="modal-body p-3">
+                        <div class="mb-3">
+                            <label for="modalAiInput" class="form-label text-secondary small fw-bold mb-1">Escribe lo que comiste en lenguaje natural:</label>
+                            <textarea id="modalAiInput" rows="3" class="form-control" placeholder="Ej: comí 3 albóndigas con una porción de puré de papas y una manzana"></textarea>
+                        </div>
+                        <div class="p-2 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 small text-secondary mb-3">
+                            <i class="fa-solid fa-sparkles text-info me-1"></i>
+                            Gemini 3.5 Flash Lite calculará los alimentos, porciones estimadas en gramos, calorías y macronutrientes, y los guardará en tu diario automáticamente.
+                        </div>
+                        <div id="modalAiSpinner" class="text-center text-info small d-none mb-3">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            <span>Calculando con Gemini 3.5 Flash Lite...</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary border-opacity-25 p-3">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary fw-bold" onclick="submitModalAiMeal()">
+                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Calcular y Guardar
+                        </button>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -360,15 +445,170 @@
 {% block extra_scripts %}
 <script>
     let quickModal = null;
+    let voiceRecognition = null;
+    let isListening = false;
 
     document.addEventListener('DOMContentLoaded', () => {
         quickModal = new bootstrap.Modal(document.getElementById('quickAddModal'));
+        setupVoiceRecognition();
     });
+
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    function setAiExample(text) {
+        document.getElementById('aiMealInput').value = text;
+        document.getElementById('aiMealInput').focus();
+    }
+
+    // Voice recognition using Web Speech API
+    function setupVoiceRecognition() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const btnVoice = document.getElementById('btnVoiceInput');
+        if (SpeechRec && btnVoice) {
+            btnVoice.style.display = 'inline-block';
+            voiceRecognition = new SpeechRec();
+            voiceRecognition.lang = 'es-ES';
+            voiceRecognition.continuous = false;
+            voiceRecognition.interimResults = false;
+
+            voiceRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('aiMealInput').value = transcript;
+                stopVoiceRecognition();
+            };
+
+            voiceRecognition.onerror = () => {
+                stopVoiceRecognition();
+            };
+
+            voiceRecognition.onend = () => {
+                stopVoiceRecognition();
+            };
+        }
+    }
+
+    function toggleVoiceInput() {
+        if (!voiceRecognition) return;
+        if (!isListening) {
+            isListening = true;
+            document.getElementById('btnVoiceInput').classList.add('btn-danger');
+            document.getElementById('btnVoiceInput').classList.remove('btn-outline-secondary');
+            voiceRecognition.start();
+        } else {
+            stopVoiceRecognition();
+        }
+    }
+
+    function stopVoiceRecognition() {
+        isListening = false;
+        const btn = document.getElementById('btnVoiceInput');
+        if (btn) {
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-outline-secondary');
+        }
+        if (voiceRecognition) {
+            try { voiceRecognition.stop(); } catch(e) {}
+        }
+    }
+
+    // Submit meal to Gemini 3.5 Flash Lite API
+    async function submitAiMeal() {
+        const input = document.getElementById('aiMealInput');
+        const text = input.value.trim();
+        const date = document.getElementById('selectedDateInput').value;
+        const spinner = document.getElementById('aiLoadingIndicator');
+        const submitBtn = document.getElementById('btnAiSubmit');
+
+        if (!text) {
+            alert('Por favor escribe lo que comiste antes de enviar.');
+            input.focus();
+            return;
+        }
+
+        submitBtn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        try {
+            const resp = await fetch('{% url "ai_parse_meal" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    text: text,
+                    date: date,
+                    meal_type: 'almuerzo',
+                    auto_save: true
+                })
+            });
+
+            const data = await resp.json();
+            if (data.success) {
+                // Reload to refresh calories and entries
+                window.location.reload();
+            } else {
+                alert('Error de IA: ' + (data.error || 'No se pudo analizar la comida.'));
+            }
+        } catch (e) {
+            alert('Error al comunicarse con el servidor: ' + e);
+        } finally {
+            submitBtn.disabled = false;
+            spinner.classList.add('d-none');
+        }
+    }
+
+    // Modal AI submit
+    async function submitModalAiMeal() {
+        const input = document.getElementById('modalAiInput');
+        const text = input.value.trim();
+        const date = document.getElementById('selectedDateInput').value;
+        const mealType = document.getElementById('modalMealType').value || 'almuerzo';
+        const spinner = document.getElementById('modalAiSpinner');
+
+        if (!text) {
+            alert('Por favor escribe tu comida.');
+            input.focus();
+            return;
+        }
+
+        spinner.classList.remove('d-none');
+
+        try {
+            const resp = await fetch('{% url "ai_parse_meal" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    text: text,
+                    date: date,
+                    meal_type: mealType,
+                    auto_save: true
+                })
+            });
+
+            const data = await resp.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error de IA: ' + (data.error || 'No se pudo analizar.'));
+            }
+        } catch (e) {
+            alert('Error: ' + e);
+        } finally {
+            spinner.classList.add('d-none');
+        }
+    }
 
     function openQuickAddModal(mealCode, mealLabel) {
         document.getElementById('modalMealType').value = mealCode;
         document.getElementById('modalMealTitle').innerText = mealLabel;
         document.getElementById('foodSearchInput').value = '';
+        document.getElementById('modalAiInput').value = '';
         filterFoodSelect();
         
         const sel = document.getElementById('modalFoodSelect');

@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.db.models import Q
 from .models import UserProfile, FoodItem, MealEntry, WeightLog
 from .forms import UserProfileForm, FoodItemForm, MealEntryForm, WeightLogForm, RegisterForm
+from .gemini_service import parse_meal_with_gemini
 
 
 def register_view(request):
@@ -281,6 +282,119 @@ def api_food_search(request):
             'fat': float(f.fat),
         })
     return JsonResponse({'results': results})
+
+
+@login_required
+def ai_parse_meal_view(request):
+    """Analiza una comida en lenguaje natural con Gemini 3.5 Flash Lite y opcionalmente la registra"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    import json
+    try:
+        if request.content_type == 'application/json':
+            body = json.loads(request.body.decode('utf-8'))
+        else:
+            body = request.POST
+
+        text = body.get('text', '').strip()
+        date_str = body.get('date', '').strip()
+        default_meal_type = body.get('meal_type', 'almuerzo')
+        auto_save = body.get('auto_save', True)
+
+        if not text:
+            return JsonResponse({"error": "Por favor escribe lo que comiste para que la IA lo analice."}, status=400)
+
+        # Parse date
+        if date_str:
+            try:
+                target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                target_date = timezone.localdate()
+        else:
+            target_date = timezone.localdate()
+
+        # Call Gemini service
+        res = parse_meal_with_gemini(text, default_meal_type=default_meal_type)
+        if "error" in res:
+            return JsonResponse({"error": res["error"]}, status=500)
+
+        foods = res.get("foods", [])
+        saved_entries = []
+
+        if auto_save:
+            for item in foods:
+                name = item["name"]
+                grams = Decimal(str(item["grams"]))
+                cal = Decimal(str(item["calories"]))
+                prot = Decimal(str(item["protein"]))
+                carbs = Decimal(str(item["carbs"]))
+                fat = Decimal(str(item["fat"]))
+                item_meal_type = item.get("meal_type", default_meal_type)
+
+                # Base per 100g calculation for the FoodItem reusable catalog
+                factor_100 = (Decimal('100.0') / grams) if grams > 0 else Decimal('1.0')
+                cal_100 = round(cal * factor_100, 1)
+                prot_100 = round(prot * factor_100, 2)
+                carbs_100 = round(carbs * factor_100, 2)
+                fat_100 = round(fat * factor_100, 2)
+
+                # Look for existing food or create a custom one for the user
+                food_obj = FoodItem.objects.filter(
+                    Q(user=request.user) | Q(user__isnull=True),
+                    name__iexact=name
+                ).first()
+
+                if not food_obj:
+                    food_obj = FoodItem.objects.create(
+                        user=request.user,
+                        name=name,
+                        brand_or_notes="Generado por Gemini IA",
+                        serving_size=Decimal('100.0'),
+                        calories=cal_100,
+                        protein=prot_100,
+                        carbs=carbs_100,
+                        fat=fat_100,
+                        is_favorite=False
+                    )
+
+                # Create the meal entry
+                entry = MealEntry.objects.create(
+                    user=request.user,
+                    date=target_date,
+                    meal_type=item_meal_type,
+                    food_item=food_obj,
+                    grams_or_amount=grams
+                )
+
+                saved_entries.append({
+                    "id": entry.id,
+                    "name": food_obj.name,
+                    "grams": float(grams),
+                    "calories": float(entry.total_calories),
+                    "protein": float(entry.total_protein),
+                    "carbs": float(entry.total_carbs),
+                    "fat": float(entry.total_fat),
+                    "meal_type": entry.get_meal_type_display(),
+                })
+
+            messages.success(
+                request,
+                f"✨ Gemini registró {len(saved_entries)} alimentos: " +
+                ", ".join(f"{e['name']} ({int(e['calories'])} kcal)" for e in saved_entries)
+            )
+
+        return JsonResponse({
+            "success": True,
+            "saved": auto_save,
+            "count": len(foods),
+            "foods": saved_entries if auto_save else foods,
+            "date": target_date.strftime('%Y-%m-%d')
+        })
+
+    except Exception as e:
+        logger.error(f"Error en ai_parse_meal_view: {e}")
+        return JsonResponse({"error": f"Error inesperado: {str(e)}"}, status=500)
 
 
 def manifest_view(request):

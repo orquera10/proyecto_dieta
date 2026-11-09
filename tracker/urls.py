@@ -13,6 +13,7 @@ urlpatterns = [
     path('settings/', views.profile_settings_view, name='profile_settings'),
     path('weight/', views.weight_tracker_view, name='weight_tracker'),
     path('api/foods/search/', views.api_food_search, name='api_food_search'),
+    path('api/ai/parse-meal/', views.ai_parse_meal_view, name='ai_parse_meal'),
     path('manifest.json', views.manifest_view, name='manifest'),
     
     # Auth
