@@ -34,9 +34,8 @@ jobs:
       - name: 🚀 Compilar APK con Gradle
         run: |
           cd android
-          chmod +x gradlew
           set -o pipefail
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle_build.log
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle_build.log
 
       - name: ⚠️ Publicar diagnóstico de error
         if: failure()
