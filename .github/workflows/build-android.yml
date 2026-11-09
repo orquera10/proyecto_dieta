@@ -40,11 +40,14 @@ jobs:
 
       - name: ⚠️ Publicar diagnóstico de error
         if: failure()
-        run: |
-          echo "### ❌ Error de compilación de Gradle:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 40 gradle_build.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-error
+          name: "Build Error Log"
+          body: "Log de error de Gradle"
+          files: gradle_build.log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📦 Renombrar APK para descarga fácil
         run: |
