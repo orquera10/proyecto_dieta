@@ -12,6 +12,7 @@ class DeficitTrackerTestCase(TestCase):
         self.profile = self.user.profile
         self.profile.calorie_target = 1800
         self.profile.maintenance_calories = 2300
+        self.profile.onboarding_completed = True
         self.profile.save()
 
         self.chicken = FoodItem.objects.create(
@@ -118,3 +119,39 @@ class DeficitTrackerTestCase(TestCase):
         self.assertIn('daily_calorie_target', data)
         self.user.profile.refresh_from_db()
         self.assertEqual(self.user.profile.calorie_target, int(data['daily_calorie_target']))
+
+    def test_onboarding_redirect_and_completion(self):
+        new_user = User.objects.create_user(username='new_member', password='SecretPassword123')
+        self.client.login(username='new_member', password='SecretPassword123')
+        # Dashboard must redirect to onboarding
+        res = self.client.get(reverse('dashboard'))
+        self.assertEqual(res.status_code, 302)
+        self.assertIn(reverse('onboarding'), res.headers.get('Location'))
+
+        # Complete onboarding
+        post_res = self.client.post(
+            reverse('onboarding'),
+            data=json.dumps({
+                'gender': 'M',
+                'age': 25,
+                'height': 180,
+                'weight': 82.5,
+                'target': 76.0,
+                'activity': 'moderado',
+                'deficit_rate': 'equilibrado',
+                'calorie_target': 1850,
+                'protein_target': 148,
+                'carbs_target': 180,
+                'fat_target': 55,
+                'maintenance_calories': 2350
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(post_res.status_code, 200)
+        new_user.profile.refresh_from_db()
+        self.assertTrue(new_user.profile.onboarding_completed)
+        self.assertEqual(new_user.profile.calorie_target, 1850)
+
+        # Now dashboard should return 200
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertEqual(dash_res.status_code, 200)

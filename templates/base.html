@@ -21,13 +21,15 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --app-bg: #080d1a;
-            --card-bg: rgba(18, 26, 44, 0.78);
+            --app-bg: #0d120e;
+            --card-bg: rgba(23, 33, 22, 0.88);
             --card-border: rgba(255, 255, 255, 0.08);
-            --accent-green: #10b981;
+            --accent-green: #b8f34a;
+            --nutra-lime: #b8f34a;
+            --nutra-lime-hover: #c6f135;
             --accent-blue: #38bdf8;
             --accent-purple: #818cf8;
             --accent-orange: #fbbf24;
@@ -343,15 +345,15 @@
             margin-top: -28px;
         }
         .mobile-nav-link.fab-center .fab-icon {
-            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-            width: 54px;
-            height: 54px;
+            background: #b8f34a;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.55), 0 8px 20px rgba(0, 0, 0, 0.4);
-            border: 3px solid #080d1a;
+            box-shadow: 0 0 25px rgba(184, 243, 74, 0.55), 0 8px 20px rgba(0, 0, 0, 0.4);
+            border: 4px solid #0d120e;
             animation: pulseFab 3s infinite ease-in-out;
             transition: transform 0.15s ease;
         }
@@ -359,12 +361,12 @@
             transform: scale(0.92);
         }
         @keyframes pulseFab {
-            0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
-            50% { box-shadow: 0 0 32px rgba(6, 182, 212, 0.75); }
+            0%, 100% { box-shadow: 0 0 20px rgba(184, 243, 74, 0.5); }
+            50% { box-shadow: 0 0 32px rgba(198, 241, 53, 0.85); }
         }
         .mobile-nav-link.fab-center .fab-icon i {
             font-size: 1.5rem;
-            color: #fff;
+            color: #10150f;
         }
 
         /* Mobile Meal Entry Cards */
@@ -452,8 +454,10 @@
     <nav class="navbar navbar-expand-lg navbar-dark glass-nav sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'dashboard' %}">
-                <i class="fa-solid fa-fire-flame-curved fa-lg flame-icon-glow text-success"></i>
-                <span class="fw-bold">Déficit Calórico</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#b8f34a">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                </svg>
+                <span class="fw-bold text-light" style="font-weight: 900; letter-spacing: 0.02em; font-size: 1.25rem;">NÜTRA</span>
             </a>
             
             {% if user.is_authenticated %}

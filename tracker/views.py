@@ -21,14 +21,95 @@ def register_view(request):
             user = form.save()
             login(request, user)
             messages.success(request, f"¡Bienvenido {user.username}! Tu cuenta ha sido creada.")
-            return redirect('profile_settings')
+            return redirect('onboarding')
     else:
         form = RegisterForm()
     return render(request, 'tracker/register.html', {'form': form})
 
 
 @login_required
+def onboarding_view(request):
+    import json
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    # Permitir omitir si el usuario lo desea
+    if request.GET.get('skip') == '1':
+        profile.onboarding_completed = True
+        profile.save()
+        messages.info(request, "Configuración omitida. Podés personalizar tus metas en cualquier momento.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        is_json = (request.content_type == 'application/json' or 'application/json' in request.headers.get('Content-Type', ''))
+        if is_json:
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                data = request.POST
+        else:
+            data = request.POST
+
+        gender = data.get('gender', 'M')
+        try:
+            age = int(data.get('age', 28))
+            height = float(data.get('height', 175.0))
+            current_weight = Decimal(str(data.get('weight', 80.0)))
+            target_weight = Decimal(str(data.get('target', 75.0)))
+            activity_level = data.get('activity', 'moderado')
+            deficit_rate = data.get('deficit_rate', 'equilibrado')
+            calorie_target = int(data.get('calorie_target', 1800))
+            protein_target = int(data.get('protein_target', 140))
+            carbs_target = int(data.get('carbs_target', 160))
+            fat_target = int(data.get('fat_target', 55))
+            maintenance_calories = int(data.get('maintenance_calories', 2300))
+        except (ValueError, TypeError):
+            age, height, current_weight, target_weight = 28, 175.0, Decimal('80.0'), Decimal('75.0')
+            activity_level, deficit_rate = 'moderado', 'equilibrado'
+            calorie_target, protein_target, carbs_target, fat_target, maintenance_calories = 1800, 140, 160, 55, 2300
+
+        profile.gender = gender
+        profile.age = age
+        profile.height = height
+        profile.target_weight = target_weight
+        profile.activity_level = activity_level
+        profile.deficit_rate = deficit_rate
+        profile.calorie_target = calorie_target
+        profile.protein_target = protein_target
+        profile.carbs_target = carbs_target
+        profile.fat_target = fat_target
+        profile.maintenance_calories = maintenance_calories
+        profile.onboarding_completed = True
+        profile.save()
+
+        # Registrar peso inicial en el tracker si no existe para hoy
+        today = timezone.localdate()
+        WeightLog.objects.update_or_create(
+            user=request.user,
+            date=today,
+            defaults={'weight': current_weight, 'notes': 'Peso de inicio NÜTRA'}
+        )
+
+        messages.success(request, "¡Tu plan nutricional ha sido creado con éxito!")
+        if is_json:
+            return JsonResponse({'status': 'ok', 'redirect_url': '/dashboard/'})
+        return redirect('dashboard')
+
+    latest_weight = WeightLog.objects.filter(user=request.user).order_by('-date').first()
+    initial_weight = latest_weight.weight if latest_weight else (profile.target_weight or Decimal('78.0'))
+
+    context = {
+        'profile': profile,
+        'initial_weight': initial_weight,
+    }
+    return render(request, 'tracker/onboarding.html', context)
+
+
+@login_required
 def dashboard_view(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if not profile.onboarding_completed and request.GET.get('skip_onboarding') != '1':
+        return redirect('onboarding')
+
     # Parse date parameter or default to today
     date_str = request.GET.get('date')
     if date_str:
@@ -42,8 +123,6 @@ def dashboard_view(request):
     prev_date = selected_date - datetime.timedelta(days=1)
     next_date = selected_date + datetime.timedelta(days=1)
     is_today = (selected_date == timezone.localdate())
-
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     # Fetch meal entries for date
     entries = MealEntry.objects.filter(
@@ -106,6 +185,10 @@ def dashboard_view(request):
     carbs_percentage = min(100, int((total_carbs / Decimal(str(profile.carbs_target or 160))) * 100))
     fat_percentage = min(100, int((total_fat / Decimal(str(profile.fat_target or 55))) * 100))
 
+    # SVG Ring offset (circumference = 452.39)
+    cal_ratio = min(Decimal('1.0'), total_calories / Decimal(str(calorie_target))) if calorie_target > 0 else Decimal('0.0')
+    cal_dashoffset = round(Decimal('452.39') * (Decimal('1.0') - cal_ratio), 2)
+
     # Weight tracking for the day
     daily_weight = WeightLog.objects.filter(user=request.user, date=selected_date).first()
     recent_weights = WeightLog.objects.filter(user=request.user).order_by('-date')[:7]
@@ -130,6 +213,7 @@ def dashboard_view(request):
         'actual_deficit': round(actual_deficit, 1),
         'deficit_target': deficit_target,
         'cal_percentage': cal_percentage,
+        'cal_dashoffset': cal_dashoffset,
         'prot_percentage': prot_percentage,
         'carbs_percentage': carbs_percentage,
         'fat_percentage': fat_percentage,

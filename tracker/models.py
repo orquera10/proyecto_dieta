@@ -42,6 +42,20 @@ class UserProfile(models.Model):
         blank=True,
         help_text="Peso objetivo en kg"
     )
+    onboarding_completed = models.BooleanField(
+        default=False,
+        help_text="Indica si el usuario completó el cuestionario inicial de déficit"
+    )
+    gender = models.CharField(
+        max_length=1,
+        choices=[('M', 'Hombre'), ('F', 'Mujer')],
+        default='M',
+        blank=True
+    )
+    age = models.PositiveIntegerField(null=True, blank=True, help_text="Edad en años")
+    height = models.FloatField(null=True, blank=True, help_text="Altura en cm")
+    activity_level = models.CharField(max_length=20, default='moderado', blank=True)
+    deficit_rate = models.CharField(max_length=20, default='moderado', blank=True)
 
     def planned_deficit(self):
         """Déficit calórico planificado por día"""
