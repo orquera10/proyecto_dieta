@@ -571,7 +571,7 @@
             {% for meal in meals_data %}
                 {% if meal.has_entries %}
                     <!-- Registered Meal Card -->
-                    <div class="meal-card-clean" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
+                    <div class="meal-card-clean" onclick="openMealDetailModal('{{ meal.code }}')">
                         <div class="meal-icon-thumb">
                             {% if meal.display_photo %}
                                 <img src="{{ meal.display_photo }}" alt="{{ meal.label }}" style="width: 100%; height: 100%; object-fit: cover;">
@@ -790,6 +790,76 @@
 
 <!-- Bottom Sheet Backdrop -->
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeAllModals()"></div>
+
+<!-- BOTTOM SHEET 0: DETALLE DE COMIDA (Figma NÜTRA Exact Match) -->
+<div class="nutra-bottom-sheet" id="mealDetailSheet" style="max-height: 90vh; overflow-y: auto;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div id="mealDetailBadge" style="width: 38px; height: 38px; background: #172116; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ffffff;">
+            <i class="fa-solid fa-utensils fs-6"></i>
+        </div>
+        <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeMealDetailModal()">
+            <i class="fa-solid fa-xmark text-dark"></i>
+        </button>
+    </div>
+
+    <!-- Title and time -->
+    <div class="d-flex align-items-baseline justify-content-between mb-3">
+        <h2 id="mealDetailTitle" style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin: 0;">
+            Almuerzo
+        </h2>
+        <span id="mealDetailTime" style="font-size: 0.85rem; color: #879482; font-weight: 700;">
+            13:10
+        </span>
+    </div>
+
+    <!-- Photo Preview (Captured photo or dish image) -->
+    <div id="mealDetailPhotoBox" class="mb-3 position-relative rounded-4 overflow-hidden" style="height: 180px; background: #e8ecdf;">
+        <img id="mealDetailPhotoImg" src="" alt="Foto de comida" style="width: 100%; height: 100%; object-fit: cover;">
+        <span id="mealDetailPhotoTag" class="position-absolute bottom-0 start-0 m-2 px-2.5 py-1 rounded-pill small fw-bold" style="background: rgba(23,33,22,0.75); color: #ffffff; font-size: 0.72rem; backdrop-filter: blur(4px);">
+            <i class="fa-solid fa-camera me-1"></i> Foto de tu plato
+        </span>
+    </div>
+
+    <!-- Nutrition summary pill banner -->
+    <div class="p-3 rounded-4 mb-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+        <div class="d-flex align-items-baseline justify-content-between mb-2">
+            <span style="font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #879482;">TOTAL REGISTRADO</span>
+            <span id="mealDetailCals" style="font-size: 1.35rem; font-weight: 900; color: #172116;">0 kcal</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.78rem; font-weight: 700;">
+            <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(184, 243, 74, 0.2); color: #3b570e;">
+                • Proteínas: <span id="mealDetailProt">0</span>g
+            </span>
+            <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(245, 158, 11, 0.15); color: #b45309;">
+                • Carbos: <span id="mealDetailCarbs">0</span>g
+            </span>
+            <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(168, 85, 247, 0.15); color: #7e22ce;">
+                • Grasas: <span id="mealDetailFat">0</span>g
+            </span>
+        </div>
+    </div>
+
+    <!-- Alimentos registrados -->
+    <div style="font-size: 0.82rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
+        ALIMENTOS DE ESTA COMIDA
+    </div>
+    <div id="mealDetailItemsList" class="d-flex flex-column gap-2 mb-4">
+        <!-- Rendered dynamically via JS -->
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex flex-column gap-2 mb-2">
+        <button type="button" class="btn w-100 py-3 rounded-4 fw-bold" style="background: #172116; color: #ffffff; font-size: 0.95rem;" onclick="addMoreToCurrentMeal()">
+            <i class="fa-solid fa-plus me-1"></i> Agregar otro alimento a esta comida
+        </button>
+        <button type="button" class="btn w-100 py-2.5 rounded-4 fw-bold" style="background: #e2f7a9; color: #213310; font-size: 0.9rem;" onclick="addMoreWithAiToCurrentMeal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#213310" class="me-1" style="vertical-align: -2px;">
+                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+            </svg>
+            Agregar con IA (foto / audio)
+        </button>
+    </div>
+</div>
 
 <!-- BOTTOM SHEET 1: AGREGAR UNA COMIDA (Figma 100% Exact Match) -->
 <div class="nutra-bottom-sheet" id="quickAddSheet" style="max-height: 90vh; overflow-y: auto;">
@@ -1039,6 +1109,8 @@
     }
 
     // Modal Management
+    const mealsDataMap = {{ meals_data_json|safe }};
+    let currentDetailMealCode = 'almuerzo';
     let activeQuickMealType = 'almuerzo';
     let activeAssistantMealType = 'almuerzo';
 
@@ -1046,6 +1118,86 @@
         document.getElementById('sheetBackdrop').classList.remove('open');
         document.getElementById('quickAddSheet').classList.remove('open');
         document.getElementById('assistantSheet').classList.remove('open');
+        const detailSheet = document.getElementById('mealDetailSheet');
+        if (detailSheet) detailSheet.classList.remove('open');
+    }
+
+    function openMealDetailModal(mealCode) {
+        closeAllModals();
+        currentDetailMealCode = mealCode;
+        const meal = mealsDataMap[mealCode];
+        if (!meal) return;
+
+        document.getElementById('mealDetailTitle').innerText = meal.label;
+        document.getElementById('mealDetailTime').innerText = meal.time_str;
+        document.getElementById('mealDetailCals').innerText = meal.subtotal_cal + ' kcal';
+        document.getElementById('mealDetailProt').innerText = Math.round(meal.subtotal_prot);
+        document.getElementById('mealDetailCarbs').innerText = Math.round(meal.subtotal_carbs);
+        document.getElementById('mealDetailFat').innerText = Math.round(meal.subtotal_fat);
+
+        const photoBox = document.getElementById('mealDetailPhotoBox');
+        const photoImg = document.getElementById('mealDetailPhotoImg');
+        const photoTag = document.getElementById('mealDetailPhotoTag');
+        if (meal.display_photo) {
+            photoImg.src = meal.display_photo;
+            photoBox.classList.remove('d-none');
+            if (meal.photo_url) {
+                photoTag.innerHTML = '<i class="fa-solid fa-camera me-1"></i> Foto de tu plato';
+            } else {
+                photoTag.innerHTML = '<i class="fa-solid fa-utensils me-1"></i> Foto sugerida';
+            }
+        } else {
+            photoBox.classList.add('d-none');
+        }
+
+        // Render entries list
+        const listContainer = document.getElementById('mealDetailItemsList');
+        if (meal.entries && meal.entries.length > 0) {
+            let html = '';
+            meal.entries.forEach(e => {
+                html += `
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+                        <div class="flex-grow-1 overflow-hidden pe-2">
+                            <strong style="font-size: 0.95rem; color: #172116; display: block;" class="text-truncate">${e.name}</strong>
+                            <div style="font-size: 0.8rem; color: #879482; font-weight: 600;">
+                                <span>${Math.round(e.grams)}g • <strong>${Math.round(e.calories)} kcal</strong></span>
+                            </div>
+                            <div style="font-size: 0.72rem; color: #6d7b68; font-weight: 500;">
+                                P: ${Math.round(e.protein)}g • C: ${Math.round(e.carbs)}g • G: ${Math.round(e.fat)}g
+                            </div>
+                        </div>
+                        <form method="post" action="/meal/delete/${e.id}/" style="margin: 0;" onsubmit="return confirm('¿Seguro que deseas eliminar este alimento?');">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-sm rounded-circle p-2 text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none; display: flex; align-items: center; justify-content: center;" title="Eliminar alimento">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        } else {
+            listContainer.innerHTML = '<p class="text-muted small m-0 text-center py-2">No hay alimentos registrados en esta comida.</p>';
+        }
+
+        document.getElementById('sheetBackdrop').classList.add('open');
+        document.getElementById('mealDetailSheet').classList.add('open');
+    }
+
+    function closeMealDetailModal() {
+        document.getElementById('sheetBackdrop').classList.remove('open');
+        document.getElementById('mealDetailSheet').classList.remove('open');
+    }
+
+    function addMoreToCurrentMeal() {
+        closeMealDetailModal();
+        const meal = mealsDataMap[currentDetailMealCode];
+        openQuickAddModal(currentDetailMealCode, meal ? meal.label : 'Comida');
+    }
+
+    function addMoreWithAiToCurrentMeal() {
+        closeMealDetailModal();
+        openAssistantModal(currentDetailMealCode);
     }
 
     function openQuickAddModal(mealCode, mealLabel) {

@@ -165,8 +165,33 @@ def dashboard_view(request):
         time_str = first_entry.created_at.strftime('%H:%M') if first_entry else {
             'desayuno': '08:20', 'almuerzo': '13:10', 'merienda': '17:00', 'cena': '21:00', 'snack': '11:00'
         }.get(code, '12:00')
-        photo_entry = next((e for e in cat_entries if e.food_item.photo), None)
-        photo_url = photo_entry.food_item.photo.url if photo_entry else None
+
+        entries_detail = []
+        for e in cat_entries:
+            e_photo = ''
+            if getattr(e, 'photo', None) and e.photo:
+                e_photo = e.photo.url
+            elif getattr(e.food_item, 'photo', None) and e.food_item.photo:
+                e_photo = e.food_item.photo.url
+
+            entries_detail.append({
+                'id': e.id,
+                'name': e.food_item.name,
+                'grams': float(e.grams_or_amount),
+                'calories': float(e.total_calories),
+                'protein': float(e.total_protein),
+                'carbs': float(e.total_carbs),
+                'fat': float(e.total_fat),
+                'photo': e_photo
+            })
+
+        photo_entry = next((e for e in cat_entries if (getattr(e, 'photo', None) and e.photo) or (getattr(e.food_item, 'photo', None) and e.food_item.photo)), None)
+        photo_url = None
+        if photo_entry:
+            if getattr(photo_entry, 'photo', None) and photo_entry.photo:
+                photo_url = photo_entry.photo.url
+            elif getattr(photo_entry.food_item, 'photo', None) and photo_entry.food_item.photo:
+                photo_url = photo_entry.food_item.photo.url
 
         default_photos = {
             'desayuno': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=120&auto=format&fit=crop&q=80',
@@ -182,6 +207,7 @@ def dashboard_view(request):
             'label': label,
             'icon': icon,
             'entries': cat_entries,
+            'entries_detail': entries_detail,
             'has_entries': bool(cat_entries),
             'summary': summary,
             'time_str': time_str,
@@ -300,6 +326,24 @@ def dashboard_view(request):
             if obj not in frequent_foods:
                 frequent_foods.append(obj)
 
+    # Prepare JSON serializable detail for meal modal
+    import json
+    meals_detail_dict = {}
+    for m in meals_data:
+        meals_detail_dict[m['code']] = {
+            'code': m['code'],
+            'label': m['label'],
+            'time_str': m['time_str'],
+            'display_photo': m['display_photo'],
+            'photo_url': m['photo_url'],
+            'subtotal_cal': int(m['subtotal_cal']),
+            'subtotal_prot': float(m['subtotal_prot']),
+            'subtotal_carbs': float(m['subtotal_carbs']),
+            'subtotal_fat': float(m['subtotal_fat']),
+            'entries': m['entries_detail']
+        }
+    meals_data_json = json.dumps(meals_detail_dict)
+
     context = {
         'selected_date': selected_date,
         'prev_date': prev_date,
@@ -307,6 +351,7 @@ def dashboard_view(request):
         'is_today': is_today,
         'profile': profile,
         'meals_data': meals_data,
+        'meals_data_json': meals_data_json,
         'total_calories': round(total_calories, 1),
         'total_protein': round(total_protein, 1),
         'total_carbs': round(total_carbs, 1),
@@ -612,6 +657,19 @@ def ai_parse_meal_view(request):
         saved_entries = []
 
         if auto_save:
+            from django.core.files.base import ContentFile
+            import uuid
+
+            photo_file = None
+            if image_b64:
+                try:
+                    img_bytes = base64.b64decode(image_b64)
+                    ext = 'png' if 'png' in image_mime_type else 'jpg'
+                    fname = f"meal_{uuid.uuid4().hex[:8]}.{ext}"
+                    photo_file = (fname, img_bytes)
+                except Exception as err:
+                    logger.error(f"Error decodificando foto base64: {err}")
+
             for item in foods:
                 name = item["name"]
                 grams = Decimal(str(item["grams"]))
@@ -647,16 +705,11 @@ def ai_parse_meal_view(request):
                         is_favorite=False
                     )
 
-                if image_b64 and not food_obj.photo:
+                if photo_file and not food_obj.photo:
                     try:
-                        from django.core.files.base import ContentFile
-                        import uuid
-                        img_bytes = base64.b64decode(image_b64)
-                        ext = 'png' if 'png' in image_mime_type else 'jpg'
-                        fname = f"meal_{uuid.uuid4().hex[:8]}.{ext}"
-                        food_obj.photo.save(fname, ContentFile(img_bytes), save=True)
+                        food_obj.photo.save(photo_file[0], ContentFile(photo_file[1]), save=True)
                     except Exception as err:
-                        print("Error saving meal photo:", err)
+                        logger.error(f"Error guardando foto en FoodItem: {err}")
 
                 # Create the meal entry
                 entry = MealEntry.objects.create(
@@ -666,6 +719,12 @@ def ai_parse_meal_view(request):
                     food_item=food_obj,
                     grams_or_amount=grams
                 )
+
+                if photo_file:
+                    try:
+                        entry.photo.save(photo_file[0], ContentFile(photo_file[1]), save=True)
+                    except Exception as err:
+                        logger.error(f"Error guardando foto en MealEntry: {err}")
 
                 saved_entries.append({
                     "id": entry.id,
