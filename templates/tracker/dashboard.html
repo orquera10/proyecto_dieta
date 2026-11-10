@@ -1,770 +1,956 @@
 {% extends "base.html" %}
 
-{% block title %}Diario {{ selected_date|date:"d M Y" }} | Déficit Calórico{% endblock %}
+{% block title %}NÜTRA | Tu día en balance{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* NÜTRA Light Theme Design System - 100% Matching Figma Make */
+    body {
+        background-color: #f3f4ee !important;
+        color: #172116 !important;
+        font-family: 'Manrope', 'Plus Jakarta Sans', sans-serif !important;
+    }
+    .nutra-container {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 16px 16px 110px;
+    }
+    .nutra-logo-box {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #b8f34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .user-avatar-pill {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e7f7c8;
+        color: #172116;
+        font-weight: 800;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Headlines */
+    .greeting-subhead {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #5e6d58;
+        margin-bottom: 2px;
+    }
+    .greeting-title {
+        font-size: 2.25rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 1.1;
+        color: #172116;
+        margin-bottom: 6px;
+    }
+    .greeting-copy {
+        font-size: 0.95rem;
+        color: #657060;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    /* Dark Hero Card */
+    .nutra-dark-card {
+        background: #172116;
+        color: #ffffff;
+        border-radius: 32px;
+        padding: 28px 22px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 24px;
+        box-shadow: 0 16px 36px rgba(23, 33, 22, 0.16);
+    }
+    .ring-wrapper {
+        position: relative;
+        width: 170px;
+        height: 170px;
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ring-inner-text {
+        position: absolute;
+        text-align: center;
+        pointer-events: none;
+    }
+    .ring-val {
+        font-size: 2.35rem;
+        font-weight: 900;
+        letter-spacing: -0.06em;
+        line-height: 1;
+        color: #ffffff;
+    }
+    .ring-sub {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.45);
+        margin-top: 4px;
+    }
+    .card-eyebrow {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #556852;
+        margin-bottom: 6px;
+    }
+    .card-headline {
+        font-size: 1.45rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+        margin-bottom: 6px;
+    }
+    .card-paragraph {
+        font-size: 0.88rem;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.55);
+        margin-bottom: 22px;
+    }
+    .macro-row {
+        margin-bottom: 14px;
+    }
+    .macro-bar-bg {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 6px;
+    }
+    .macro-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.6s ease;
+    }
+    /* Meal Cards Minimalist */
+    .meal-card-clean {
+        background: #ffffff;
+        border: 1px solid rgba(23, 33, 22, 0.08);
+        border-radius: 20px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(23, 33, 22, 0.02);
+        cursor: pointer;
+        transition: transform 0.15s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    .meal-card-clean:hover {
+        transform: translateY(-1px);
+        color: inherit;
+    }
+    .meal-icon-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: #faeedf;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    .meal-card-empty {
+        background: transparent;
+        border: 1.5px dashed rgba(23, 33, 22, 0.18);
+        border-radius: 20px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    .meal-card-empty:hover {
+        background: rgba(255, 255, 255, 0.5);
+        border-color: #b8f34a;
+        color: inherit;
+    }
+    .meal-empty-plus {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: rgba(23, 33, 22, 0.05);
+        color: rgba(23, 33, 22, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    /* AI Prominent Card */
+    .ai-banner-card {
+        background: #e2f7a9;
+        border-radius: 28px;
+        padding: 24px 20px;
+        margin-top: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-ai-pill {
+        background: #172116;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 0.95rem;
+        border-radius: 999px;
+        padding: 14px 24px;
+        border: none;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-ai-pill:hover {
+        background: #243322;
+        color: #ffffff;
+    }
+    /* Floating Dock */
+    .nutra-bottom-dock {
+        position: fixed;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 440px;
+        background: #172116;
+        border-radius: 999px;
+        padding: 8px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1050;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .dock-tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-decoration: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.15s ease;
+        padding: 4px;
+    }
+    .dock-tab.active {
+        color: #b8f34a;
+    }
+    .dock-tab:hover {
+        color: #ffffff;
+    }
+    .dock-fab {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #b8f34a;
+        color: #10150f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        border: 3px solid #172116;
+        box-shadow: 0 0 20px rgba(184, 243, 74, 0.5);
+        cursor: pointer;
+        transition: transform 0.15s ease;
+    }
+    .dock-fab:active {
+        transform: scale(0.92);
+    }
+    /* Bottom Sheet Assistant Drawer */
+    .nutra-bottom-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #fdfdfc;
+        border-top-left-radius: 32px;
+        border-top-right-radius: 32px;
+        padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+        z-index: 1060;
+        max-width: 480px;
+        margin: 0 auto;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+        transform: translateY(105%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nutra-bottom-sheet.open {
+        transform: translateY(0);
+    }
+    .sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1055;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+    .sheet-backdrop.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .assistant-card-btn {
+        background: #ffffff;
+        border: 1px solid rgba(23, 33, 22, 0.08);
+        border-radius: 20px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+        margin-bottom: 12px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .assistant-card-btn:hover {
+        border-color: #b8f34a;
+        transform: translateY(-1px);
+    }
+    .assistant-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: #e7f7c8;
+        color: #172116;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    /* Progress Screen Classes */
+    .stat-card-lime {
+        background: #e8f8bd;
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 12px;
+    }
+    .stat-card-white {
+        background: #ffffff;
+        border: 1px solid rgba(23, 33, 22, 0.08);
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 12px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row g-3 g-md-4">
-    <!-- Top Date Navigation Bar -->
-    <div class="col-12">
-        <div class="card p-2 p-md-3">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div class="d-flex align-items-center gap-1 gap-md-2 w-100 w-sm-auto justify-content-between justify-content-sm-start">
-                    <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm px-3" title="Día anterior">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </a>
-                    
-                    <form method="get" action="" class="d-flex align-items-center gap-1 m-0 flex-grow-1 flex-sm-grow-0">
-                        <input type="date" name="date" id="selectedDateInput" value="{{ selected_date|date:'Y-m-d' }}" class="form-control form-control-sm text-center fw-bold" style="min-width: 135px;" onchange="this.form.submit()">
-                    </form>
-
-                    <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm px-3" title="Día siguiente">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </a>
-
-                    {% if not is_today %}
-                    <a href="?date={% now 'Y-m-d' %}" class="btn btn-outline-info btn-sm">
-                        <i class="fa-solid fa-calendar-check me-1"></i> Hoy
-                    </a>
-                    {% endif %}
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between w-100 w-sm-auto gap-2">
-                    <span class="badge {% if remaining_calories >= 0 %}bg-success-subtle text-success border border-success{% else %}bg-danger-subtle text-danger border border-danger{% endif %} px-2 px-md-3 py-2 fs-6 flex-grow-1 text-center">
-                        {% if remaining_calories >= 0 %}
-                            <i class="fa-solid fa-fire-flame-curved me-1"></i> Te quedan <strong>{{ remaining_calories }}</strong> kcal
-                        {% else %}
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Superávit (+{{ remaining_calories|stringformat:"+d"|slice:"1:" }} kcal)
-                        {% endif %}
-                    </span>
-                    <button class="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" onclick="openQuickAddModal('almuerzo', 'Almuerzo')">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Añadir</span>
-                    </button>
-                </div>
+<div class="nutra-container">
+    <!-- Top Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <div class="nutra-logo-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                </svg>
             </div>
+            <span style="font-weight: 900; letter-spacing: -0.02em; font-size: 1.35rem; color: #172116;">NÜTRA</span>
         </div>
+        <a href="{% url 'profile_settings' %}" class="user-avatar-pill text-decoration-none" title="Mi perfil">
+            {{ user.username|slice:":2"|upper }}
+        </a>
     </div>
 
-    <!-- AI Quick Logger Card (Powered by Gemini 3.5 Flash Lite) -->
-    <div class="col-12">
-        <div class="card card-ai-glow shadow-lg p-1">
-            <div class="card-header border-0 bg-transparent py-2 px-3 d-flex align-items-center justify-content-between cursor-pointer" data-bs-toggle="collapse" data-bs-target="#collapseAiLoggerCard" role="button" aria-expanded="true">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="p-2 rounded-3 text-info" style="background: rgba(56, 189, 248, 0.15); box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);">
-                        <i class="fa-solid fa-wand-magic-sparkles fs-5 flame-icon-glow"></i>
-                    </div>
-                    <div>
-                        <span class="fw-bold fs-6 text-light" style="letter-spacing: -0.01em;">Registrar con IA</span>
-                        <span class="badge ms-1 py-1 px-2 text-info border border-info border-opacity-50" style="background: rgba(56, 189, 248, 0.1); font-size: 0.7rem;">Gemini 3.5 Flash Lite</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down text-secondary small chevron-rotate ms-1"></i>
+    <!-- VIEW 1: HOY (DASHBOARD) -->
+    <div id="viewToday" class="{% if active_tab == 'progreso' %}d-none{% endif %}">
+        <!-- Greetings -->
+        <div class="greeting-subhead">
+            {% now "H" as current_hour %}
+            {% if current_hour|add:0 < 12 %}Buenos días,{% elif current_hour|add:0 < 19 %}Buenas tardes,{% else %}Buenas noches,{% endif %} {{ user.first_name|default:user.username }}
+        </div>
+        <h1 class="greeting-title">Tu día, en balance.</h1>
+        <div class="greeting-copy">
+            {% if remaining_calories >= 0 %}
+                Te quedan <strong>{{ remaining_calories|floatformat:0 }} kcal</strong> para hoy
+            {% else %}
+                Superávit de <strong>{{ remaining_calories|stringformat:"+d"|slice:"1:" }} kcal</strong>
+            {% endif %}
+        </div>
+
+        <!-- Dark Hero Card -->
+        <div class="nutra-dark-card">
+            <!-- Calorie Ring -->
+            <div class="ring-wrapper">
+                <svg viewBox="0 0 180 180" style="transform: rotate(-90deg); width: 170px; height: 170px;">
+                    <circle cx="90" cy="90" r="72" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"></circle>
+                    <circle cx="90" cy="90" r="72" fill="none" stroke="#b8f34a" stroke-width="12" stroke-linecap="round"
+                            stroke-dasharray="452.39"
+                            stroke-dashoffset="{{ cal_dashoffset }}"
+                            style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1); filter: drop-shadow(0 0 10px rgba(184, 243, 74, 0.45));"></circle>
+                </svg>
+                <div class="ring-inner-text">
+                    <div class="ring-val">{{ total_calories|floatformat:0 }}</div>
+                    <div class="ring-sub">de {{ profile.calorie_target }} kcal</div>
                 </div>
-                <span class="badge text-success border border-success border-opacity-50 small d-none d-sm-inline-flex align-items-center gap-1" style="background: rgba(16, 185, 129, 0.12); font-size: 0.72rem;">
-                    <i class="fa-solid fa-bolt text-warning"></i> Foto + Texto
+            </div>
+
+            <!-- Resumen de hoy -->
+            <div class="card-eyebrow">RESUMEN DE HOY</div>
+            <div class="card-headline">
+                {% if remaining_calories >= 0 %}
+                    Estás dentro de tu objetivo
+                {% else %}
+                    Alcanzaste tu límite
+                {% endif %}
+            </div>
+            <p class="card-paragraph">
+                {% if remaining_calories >= 0 %}
+                    Vas con un ritmo equilibrado y todavía tenés margen para disfrutar tus próximas comidas.
+                {% else %}
+                    Consumiste tu objetivo calórico de hoy. Enfocate en hidratarte y descansar bien.
+                {% endif %}
+            </p>
+
+            <!-- Macronutrientes -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="card-eyebrow m-0">MACRONUTRIENTES</div>
+                <span class="badge px-3 py-1 rounded-pill" style="background: rgba(184, 243, 74, 0.12); color: #c8fa67; font-size: 0.72rem; font-weight: 800;">
+                    En objetivo
                 </span>
             </div>
+            <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 14px;">Progreso diario</div>
 
-            <div class="collapse show" id="collapseAiLoggerCard">
-                <div class="card-body p-3 p-md-4 pt-1">
-                    <div class="input-group mb-2 shadow-sm">
-                        <input type="file" id="aiMealPhotoInput" accept="image/*" capture="environment" class="d-none" onchange="handleAiMealPhotoSelect(event)">
-                        <button type="button" id="btnPhotoInput" class="btn btn-outline-secondary px-3" onclick="triggerCameraInput('aiMealPhotoInput')" title="Sacar foto del plato con la cámara">
-                            <i class="fa-solid fa-camera text-warning fs-5"></i>
-                        </button>
-                        <button type="button" id="btnVoiceInput" class="btn btn-outline-secondary px-3" onclick="toggleVoiceInput()" title="Dictar por voz">
-                            <i class="fa-solid fa-microphone text-info fs-5"></i>
-                        </button>
-                        <input type="text" id="aiMealInput" class="form-control form-control-lg fs-6" placeholder="Escribe tu comida o saca una foto..." onkeydown="if(event.key === 'Enter') submitAiMeal()">
-                        <button type="button" id="btnAiSubmit" class="btn btn-primary d-flex align-items-center gap-2 px-3 px-sm-4 fw-bold" onclick="submitAiMeal()">
-                            <i class="fa-solid fa-paper-plane"></i>
-                            <span class="d-none d-sm-inline">Registrar</span>
-                        </button>
-                    </div>
+            <!-- Proteínas -->
+            <div class="macro-row">
+                <div class="d-flex justify-content-between align-items-center" style="font-size: 0.85rem; font-weight: 700;">
+                    <span><span style="color: #b8f34a; font-size: 1.1rem; line-height: 0;">•</span> Proteínas</span>
+                    <span><strong>{{ total_protein|floatformat:0 }}g</strong> <span style="color: rgba(255,255,255,0.4);">/ {{ profile.protein_target }}g</span></span>
+                </div>
+                <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" style="width: {{ prot_percentage }}%; background: #b8f34a;"></div>
+                </div>
+            </div>
 
-                    <!-- Preview de Foto Adjunta -->
-                    <div id="aiPhotoPreviewBox" class="d-none align-items-center gap-2 p-2 mb-2 rounded-3 animate-fade-in" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.4);">
-                        <img id="aiPhotoPreviewImg" src="" alt="Foto comida" class="rounded-2 shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
-                        <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
-                            <div class="fw-bold text-light text-truncate small" id="aiPhotoFileName">Foto seleccionada</div>
-                            <span class="text-info" style="font-size: 0.73rem;"><i class="fa-solid fa-eye me-1"></i>Gemini 3.5 Flash Lite analizará la foto con tu texto</span>
-                        </div>
-                        <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-circle" onclick="removeAiMealPhoto()" title="Eliminar foto">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
+            <!-- Carbohidratos -->
+            <div class="macro-row">
+                <div class="d-flex justify-content-between align-items-center" style="font-size: 0.85rem; font-weight: 700;">
+                    <span><span style="color: #f59e0b; font-size: 1.1rem; line-height: 0;">•</span> Carbohidratos</span>
+                    <span><strong>{{ total_carbs|floatformat:0 }}g</strong> <span style="color: rgba(255,255,255,0.4);">/ {{ profile.carbs_target }}g</span></span>
+                </div>
+                <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" style="width: {{ carbs_percentage }}%; background: #f59e0b;"></div>
+                </div>
+            </div>
 
-                    <!-- Chips de ejemplos rápidos -->
-                    <div class="d-flex flex-wrap align-items-center gap-2 pt-1">
-                        <span class="text-secondary small fst-italic" style="font-size: 0.75rem;"><i class="fa-regular fa-lightbulb me-1 text-warning"></i>Ejemplos:</span>
-                        <span class="chip-qty py-1 px-3" onclick="setAiExample('como 3 albóndigas con una porción de puré')">3 albóndigas con puré</span>
-                        <span class="chip-qty py-1 px-3" onclick="setAiExample('pechuga de pollo 200g con ensalada mixta y 1 taza de arroz')">Pollo con arroz y ensalada</span>
-                        <span class="chip-qty py-1 px-3" onclick="setAiExample('café con leche y 2 tostadas de pan integral con queso untable')">Desayuno tostadas</span>
-                    </div>
-
-                    <!-- Loading indicator -->
-                    <div id="aiLoadingIndicator" class="mt-3 text-center text-info small d-none">
-                        <div class="spinner-border spinner-border-sm me-2 text-info" role="status"></div>
-                        <span class="fw-bold">Gemini 3.5 Flash Lite está calculando gramos, calorías y macros...</span>
-                    </div>
+            <!-- Grasas -->
+            <div class="macro-row mb-0">
+                <div class="d-flex justify-content-between align-items-center" style="font-size: 0.85rem; font-weight: 700;">
+                    <span><span style="color: #a855f7; font-size: 1.1rem; line-height: 0;">•</span> Grasas</span>
+                    <span><strong>{{ total_fat|floatformat:0 }}g</strong> <span style="color: rgba(255,255,255,0.4);">/ {{ profile.fat_target }}g</span></span>
+                </div>
+                <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" style="width: {{ fat_percentage }}%; background: #a855f7;"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Calories & Macros Overview Cards -->
-    <div class="col-lg-5 col-xl-4">
-        <div class="card shadow-lg h-100">
-            <div class="card-header py-3 px-3 d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#collapseBalanceCard" role="button" aria-expanded="true">
-                <span class="fw-bold text-light d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-chart-pie text-info"></i> Balance del Día
-                    <i class="fa-solid fa-chevron-down text-secondary small chevron-rotate ms-1"></i>
-                </span>
-                <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation();">
-                    <a href="{% url 'profile_settings' %}" class="badge text-info border border-info border-opacity-50 text-decoration-none py-1 px-2 d-flex align-items-center gap-1" style="background: rgba(56, 189, 248, 0.1);" title="Calcular déficit con IA">
-                        <i class="fa-solid fa-wand-magic-sparkles text-warning"></i> Metas IA
-                    </a>
-                    <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary btn-sm p-1 px-2" title="Editar metas">
-                        <i class="fa-solid fa-sliders"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="collapse show" id="collapseBalanceCard">
-                <div class="card-body p-3 p-md-4">
-                <!-- NÜTRA Calorie Ring from Figma Make -->
-                <div class="text-center my-3 p-4 rounded-4" style="background: rgba(16, 21, 15, 0.65); border: 1px solid rgba(255, 255, 255, 0.06);">
-                    <div class="position-relative d-inline-flex align-items-center justify-content-center" style="width: 186px; height: 186px;">
-                        <svg viewBox="0 0 180 180" style="transform: rotate(-90deg); width: 180px; height: 180px;">
-                            <circle cx="90" cy="90" r="72" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12"></circle>
-                            <circle cx="90" cy="90" r="72" fill="none" stroke="#b8f34a" stroke-width="12" stroke-linecap="round"
-                                    stroke-dasharray="452.39"
-                                    stroke-dashoffset="{{ cal_dashoffset }}"
-                                    style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1); filter: drop-shadow(0 0 8px rgba(184, 243, 74, 0.4));"></circle>
-                        </svg>
-                        <div class="position-absolute text-center" style="pointer-events: none;">
-                            <div class="display-6 fw-black text-light" style="font-weight: 900; letter-spacing: -0.05em; line-height: 1.1;">{{ total_calories|floatformat:0 }}</div>
-                            <div class="text-secondary small mt-1 fw-bold" style="font-size: 0.8rem;">de {{ profile.calorie_target }} kcal</div>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        {% if remaining_calories >= 0 %}
-                            <span class="badge px-3 py-2 rounded-pill fw-bold" style="background: rgba(184, 243, 74, 0.15); color: #c6f135; font-size: 0.82rem;">
-                                <i class="fa-solid fa-circle-check me-1"></i> Estás dentro de tu objetivo (te quedan {{ remaining_calories|floatformat:0 }} kcal)
-                            </span>
-                        {% else %}
-                            <span class="badge bg-danger bg-opacity-20 text-danger px-3 py-2 rounded-pill fw-bold" style="font-size: 0.82rem;">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Superávit calórico (+{{ remaining_calories }} kcal)
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Deficit Stats Banner -->
-                <div class="row g-2 text-center my-2">
-                    <div class="col-6">
-                        <div class="p-3 rounded-4" style="background: rgba(11, 17, 32, 0.6); border: 1px solid rgba(255, 255, 255, 0.06);">
-                            <div class="text-secondary small fw-bold" style="font-size: 0.72rem;">RESTANTE DÉFICIT</div>
-                            <div class="fs-4 fw-bold num-font mt-1 {% if remaining_calories >= 0 %}text-success{% else %}text-danger{% endif %}" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.3));">
-                                {{ remaining_calories }} <span class="small" style="font-size: 0.75rem;">kcal</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 rounded-4" style="background: rgba(11, 17, 32, 0.6); border: 1px solid rgba(255, 255, 255, 0.06);">
-                            <div class="text-secondary small fw-bold" style="font-size: 0.72rem;">DÉFICIT TOTAL</div>
-                            <div class="fs-4 fw-bold num-font text-info mt-1" style="filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.3));">
-                                -{{ actual_deficit }} <span class="small" style="font-size: 0.75rem;">kcal</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="border-secondary border-opacity-25 my-3">
-
-                <!-- Macronutrients Progress Mobile-Optimized Grid -->
-                <h6 class="text-uppercase text-secondary fw-bold small mb-3" style="font-size: 0.75rem; letter-spacing: 0.05em;">Distribución de Macros</h6>
-                
-                <!-- Protein -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge-macro macro-p py-1 px-2"><i class="fa-solid fa-drumstick-bite"></i> Proteínas</span>
-                        <span class="small fw-bold num-font"><span class="text-info">{{ total_protein }}g</span> / <span class="text-secondary">{{ profile.protein_target }}g</span></span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar progress-bar-protein" role="progressbar" style="width: {{ prot_percentage }}%;"></div>
-                    </div>
-                </div>
-
-                <!-- Carbs -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge-macro macro-c py-1 px-2"><i class="fa-solid fa-wheat-awn"></i> Carbohidratos</span>
-                        <span class="small fw-bold num-font"><span class="text-warning">{{ total_carbs }}g</span> / <span class="text-secondary">{{ profile.carbs_target }}g</span></span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar progress-bar-carbs" role="progressbar" style="width: {{ carbs_percentage }}%;"></div>
-                    </div>
-                </div>
-
-                <!-- Fat -->
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge-macro macro-f py-1 px-2"><i class="fa-solid fa-droplet"></i> Grasas</span>
-                        <span class="small fw-bold num-font"><span class="text-danger">{{ total_fat }}g</span> / <span class="text-secondary">{{ profile.fat_target }}g</span></span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar progress-bar-fat" role="progressbar" style="width: {{ fat_percentage }}%;"></div>
-                    </div>
-                </div>
-
-                <!-- Weight snippet -->
-                <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top border-secondary border-opacity-25">
-                    <div>
-                        <div class="text-secondary small" style="font-size: 0.75rem;"><i class="fa-solid fa-scale-balanced me-1"></i> Peso hoy:</div>
-                        <div class="fw-bold text-light fs-6">
-                            {% if daily_weight %}{{ daily_weight.weight }} kg{% else %}<span class="text-secondary small fst-italic">Sin registrar</span>{% endif %}
-                        </div>
-                    </div>
-                    <a href="{% url 'weight_tracker' %}" class="btn btn-outline-secondary btn-sm py-1 px-2">
-                        <i class="fa-solid fa-plus me-1"></i> Registrar
-                    </a>
-                </div>
-            </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Meals Breakdown List -->
-    <div class="col-lg-7 col-xl-8">
-        <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-            <span class="fw-bold text-light fs-6 d-flex align-items-center gap-2">
-                <i class="fa-solid fa-utensils text-success"></i> Comidas del Día
-            </span>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3 rounded-pill fw-bold" onclick="toggleAllMeals(true)" title="Desplegar todas las comidas" style="font-size: 0.78rem;">
-                    <i class="fa-solid fa-angles-down me-1 text-info"></i>Desplegar
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3 rounded-pill fw-bold" onclick="toggleAllMeals(false)" title="Comprimir todas las comidas" style="font-size: 0.78rem;">
-                    <i class="fa-solid fa-angles-up me-1 text-warning"></i>Comprimir
-                </button>
-            </div>
+        <!-- Section: Tus Comidas -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.04em; margin: 0; color: #172116;">Tus comidas</h2>
+            <button type="button" class="btn btn-sm fw-bold p-0 text-dark" onclick="openAssistantModal()" style="font-size: 0.9rem;">
+                + Agregar
+            </button>
         </div>
 
-        <div class="d-flex flex-column gap-3">
+        <div class="meal-list-container">
             {% for meal in meals_data %}
-            <div class="card overflow-hidden shadow-sm animate-fade-in" style="border-left: 4px solid {% if meal.code == 'desayuno' %}#fbbf24{% elif meal.code == 'almuerzo' %}#38bdf8{% elif meal.code == 'merienda' %}#a855f7{% elif meal.code == 'cena' %}#818cf8{% else %}#10b981{% endif %};">
-                <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between cursor-pointer" data-bs-toggle="collapse" data-bs-target="#collapseMeal{{ meal.code }}" role="button" aria-expanded="true">
-                    <div class="d-flex align-items-center gap-2 flex-grow-1">
-                        <div class="icon-box {% if meal.code == 'desayuno' %}icon-box-c{% elif meal.code == 'almuerzo' %}icon-box-p{% elif meal.code == 'merienda' %}icon-box-f{% else %}icon-box-p{% endif %}" style="width: 32px; height: 32px; font-size: 0.9rem;">
-                            <i class="fa-solid {{ meal.icon }}"></i>
+                {% if meal.has_entries %}
+                    <!-- Registered Meal Card -->
+                    <div class="meal-card-clean" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
+                        <div class="meal-icon-thumb">
+                            {% if meal.photo_url %}
+                                <img src="{{ meal.photo_url }}" alt="{{ meal.label }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <i class="fa-regular fa-clock" style="color: #172116; font-size: 1.1rem;"></i>
+                            {% endif %}
                         </div>
-                        <span class="fs-6 fw-bold text-light">{{ meal.label }}</span>
-                        <i class="fa-solid fa-chevron-down text-secondary small chevron-rotate ms-1"></i>
-                    </div>
-                    <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation();">
-                        <span class="badge rounded-pill px-3 py-2 text-light num-font" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);">
-                            {{ meal.subtotal_cal }} <span class="text-secondary" style="font-size: 0.7rem;">kcal</span>
-                        </span>
-                        <button class="btn btn-success d-flex align-items-center justify-content-center gap-1 px-3 py-2 rounded-pill shadow" style="min-height: 44px; min-width: 44px; border: 1px solid rgba(16, 185, 129, 0.6); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')" title="Añadir alimento a {{ meal.label }}">
-                            <i class="fa-solid fa-plus fs-4 fw-bold"></i>
-                            <span class="fw-bold small d-none d-sm-inline">Añadir</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="collapse show" id="collapseMeal{{ meal.code }}">
-                    <!-- Subtotals summary bar on mobile -->
-                    <div class="px-3 py-2 border-bottom border-secondary border-opacity-10 d-flex justify-content-between small text-secondary num-font" style="background: rgba(11, 17, 32, 0.4); font-size: 0.75rem;">
-                        <span><span class="text-info fw-bold">P: {{ meal.subtotal_prot }}g</span> &bull; <span class="text-warning fw-bold">C: {{ meal.subtotal_carbs }}g</span> &bull; <span class="text-danger fw-bold">G: {{ meal.subtotal_fat }}g</span></span>
-                        <span class="text-secondary">{{ meal.entries|length }} alimento{% if meal.entries|length != 1 %}s{% endif %}</span>
-                    </div>
-
-                <div class="card-body p-2 p-md-0">
-                    {% if meal.entries %}
-                    
-                    <!-- Mobile Card List View (< 768px) -->
-                    <div class="d-md-none">
-                        {% for entry in meal.entries %}
-                        <div class="mobile-meal-entry">
-                            <div class="flex-grow-1 pe-2">
-                                <div class="fw-bold text-light" style="font-size: 0.95rem;">{{ entry.food_item.name }}</div>
-                                <div class="d-flex align-items-center gap-2 text-secondary small mt-1" style="font-size: 0.8rem;">
-                                    <span class="badge bg-secondary-subtle text-light">{{ entry.grams_or_amount|floatformat:0 }}g</span>
-                                    <span class="text-success fw-bold">{{ entry.total_calories }} kcal</span>
-                                    <span>P:{{ entry.total_protein }}g</span>
-                                    <span>C:{{ entry.total_carbs }}g</span>
-                                    <span>G:{{ entry.total_fat }}g</span>
-                                </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex align-items-baseline gap-2">
+                                <strong style="font-size: 0.95rem; color: #172116;">{{ meal.label }}</strong>
+                                <span style="font-size: 0.75rem; color: #879482; font-weight: 600;">{{ meal.time_str }}</span>
                             </div>
-                            <form method="post" action="{% url 'delete_meal_entry' entry.id %}" onsubmit="return confirm('¿Eliminar {{ entry.food_item.name }}?');" class="m-0">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-danger btn-sm p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" title="Eliminar">
-                                    <i class="fa-solid fa-trash-can" style="font-size: 0.85rem;"></i>
-                                </button>
-                            </form>
+                            <div class="text-truncate" style="font-size: 0.8rem; color: #6d7b68; font-weight: 500;">
+                                {{ meal.summary }}
+                            </div>
                         </div>
-                        {% endfor %}
+                        <div class="text-end">
+                            <strong style="font-size: 1.1rem; color: #172116; font-weight: 900;">{{ meal.subtotal_cal }}</strong>
+                            <div style="font-size: 0.72rem; color: #879482; font-weight: 700; line-height: 1;">kcal</div>
+                        </div>
                     </div>
+                {% else %}
+                    <!-- Empty Meal Card -->
+                    <div class="meal-card-empty" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
+                        <div class="meal-empty-plus">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                        <div>
+                            <strong style="font-size: 0.95rem; color: #172116; display: block;">{{ meal.label }}</strong>
+                            <span style="font-size: 0.8rem; color: #879482; font-weight: 500;">Todavía no registraste alimentos</span>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
 
-                    <!-- Desktop Table View (>= 768px) -->
-                    <div class="d-none d-md-block table-responsive">
-                        <table class="table table-dark table-hover mb-0 align-middle">
-                            <thead class="table-secondary table-opacity-10 text-secondary small">
-                                <tr>
-                                    <th class="ps-3" style="width: 40%;">Alimento</th>
-                                    <th class="text-center" style="width: 15%;">Cantidad</th>
-                                    <th class="text-center" style="width: 15%;">Calorías</th>
-                                    <th class="text-center" style="width: 20%;">Macros (P/C/G)</th>
-                                    <th class="text-end pe-3" style="width: 10%;">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in meal.entries %}
-                                <tr>
-                                    <td class="ps-3">
-                                        <div class="fw-bold text-light">{{ entry.food_item.name }}</div>
-                                        {% if entry.food_item.brand_or_notes %}
-                                        <div class="text-secondary small">{{ entry.food_item.brand_or_notes }}</div>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center font-monospace">{{ entry.grams_or_amount|floatformat:0 }}g</td>
-                                    <td class="text-center fw-bold text-success">{{ entry.total_calories }} kcal</td>
-                                    <td class="text-center small text-secondary">
-                                        <span class="text-info">{{ entry.total_protein }}g</span> / 
-                                        <span class="text-warning">{{ entry.total_carbs }}g</span> / 
-                                        <span class="text-danger">{{ entry.total_fat }}g</span>
-                                    </td>
-                                    <td class="text-end pe-3">
-                                        <form method="post" action="{% url 'delete_meal_entry' entry.id %}" onsubmit="return confirm('¿Seguro que deseas eliminar este alimento?');" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2" title="Eliminar">
-                                                <i class="fa-solid fa-trash-can"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- AI Assistant Banner Card -->
+        <div class="ai-banner-card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#172116" class="mb-2">
+                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+            </svg>
+            <h3 style="font-size: 1.45rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 4px;">
+                Registrar es más fácil con IA.
+            </h3>
+            <p style="font-size: 0.88rem; color: #43523f; margin-bottom: 0; line-height: 1.45;">
+                Sacá una foto, contanos qué comiste o mandanos un audio.
+            </p>
+            <button type="button" class="btn-ai-pill" onclick="openAssistantModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#b8f34a">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                </svg>
+                <span>Abrir asistente</span>
+            </button>
+        </div>
+    </div>
 
-                    {% else %}
-                    <div class="p-3 text-center text-secondary small">
-                        <div class="mb-2"><i class="fa-solid fa-utensils me-1 opacity-50"></i> Sin alimentos registrados en {{ meal.label|lower }}.</div>
-                        <button class="btn btn-outline-success btn-sm px-3 py-1 rounded-pill fw-bold" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
-                            <i class="fa-solid fa-plus me-1 fs-6"></i> Añadir alimento
-                        </button>
-                    </div>
-                    {% endif %}
+    <!-- VIEW 2: PROGRESO (SEGUIMIENTO SEMANAL DE PESO) -->
+    <div id="viewProgress" class="{% if active_tab != 'progreso' %}d-none{% endif %}">
+        <div class="d-flex flex-column justify-content-between mb-4">
+            <div class="greeting-subhead">Seguimiento semanal</div>
+            <h1 class="greeting-title">Tu progreso.</h1>
+            <p class="greeting-copy mb-3">Registrá tu peso una vez por semana, idealmente el mismo día y a la misma hora.</p>
+            <button type="button" class="btn" style="background: #172116; color: #ffffff; border-radius: 16px; padding: 12px 20px; font-weight: 800; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" onclick="openWeightModal()">
+                <i class="fa-solid fa-plus"></i> Registrar peso
+            </button>
+        </div>
+
+        <!-- 3 Stat Cards -->
+        <div class="stat-card-lime">
+            <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #5e6d58; margin-bottom: 2px;">
+                PESO ACTUAL
+            </div>
+            <div class="display-5 fw-black" style="font-weight: 900; letter-spacing: -0.05em; color: #172116;">
+                {{ current_weight }} kg
+            </div>
+            <div style="font-size: 0.85rem; color: #5e6d58; font-weight: 600; margin-top: 2px;">
+                {{ weight_lost }} kg desde el inicio
+            </div>
+        </div>
+
+        <div class="stat-card-white">
+            <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #879482; margin-bottom: 2px;">
+                OBJETIVO
+            </div>
+            <div class="display-5 fw-black" style="font-weight: 900; letter-spacing: -0.05em; color: #172116;">
+                {{ target_weight }} kg
+            </div>
+            <div style="font-size: 0.85rem; color: #879482; font-weight: 600; margin-top: 2px;">
+                Te faltan {{ weight_to_go }} kg
+            </div>
+        </div>
+
+        <div class="stat-card-white">
+            <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #879482; margin-bottom: 2px;">
+                PROMEDIO SEMANAL
+            </div>
+            <div class="display-5 fw-black" style="font-weight: 900; letter-spacing: -0.05em; color: #172116;">
+                -{{ avg_weekly_lost }} kg
+            </div>
+            <div style="font-size: 0.85rem; color: #879482; font-weight: 600; margin-top: 2px;">
+                Ritmo saludable y sostenible
+            </div>
+        </div>
+
+        <!-- SVG Curve Chart -->
+        <div class="stat-card-white p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 style="font-size: 1.15rem; font-weight: 800; letter-spacing: -0.03em; color: #172116; margin: 0;">Evolución del peso</h3>
+                    <small style="color: #879482;">Últimas semanas registradas</small>
                 </div>
+                <span class="badge px-3 py-1.5 rounded-pill" style="background: #e8f5cf; color: #4e7110; font-weight: 800; font-size: 0.78rem;">
+                    <i class="fa-solid fa-arrow-trend-down me-1"></i> -{{ weight_lost }} kg
+                </span>
+            </div>
+
+            <div style="width: 100%; overflow: hidden;">
+                <svg viewBox="0 0 720 230" style="width: 100%; height: 180px;">
+                    <defs>
+                        <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#b8f34a" stop-opacity="0.45"/>
+                            <stop offset="100%" stop-color="#b8f34a" stop-opacity="0.0"/>
+                        </linearGradient>
+                    </defs>
+                    <line x1="24" x2="696" y1="60" y2="60" stroke="#172116" stroke-opacity="0.06" stroke-dasharray="4 6"/>
+                    <line x1="24" x2="696" y1="120" y2="120" stroke="#172116" stroke-opacity="0.06" stroke-dasharray="4 6"/>
+                    <line x1="24" x2="696" y1="180" y2="180" stroke="#172116" stroke-opacity="0.06" stroke-dasharray="4 6"/>
+                    
+                    {% if chart_area_points %}
+                        <polygon points="{{ chart_area_points }}" fill="url(#weightAreaGrad)"/>
+                        <polyline points="{{ chart_line_points }}" fill="none" stroke="#79a522" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        {% for pt in weight_points %}
+                            <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="8" fill="#ffffff" stroke="#79a522" stroke-width="3"/>
+                            <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="4" fill="#79a522"/>
+                            <text x="{{ pt.x }}" y="215" text-anchor="middle" fill="#879482" font-size="12" font-weight="700">S{{ pt.week }}</text>
+                        {% endfor %}
+                    {% endif %}
+                </svg>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 pt-3 mt-2" style="font-size: 0.78rem;">
+                <span style="color: #879482;">Inicio: {{ start_weight }} kg</span>
+                <span style="font-weight: 700; color: #5d8118;">Tendencia descendente</span>
+            </div>
+        </div>
+
+        <!-- Target Goal Dark Card -->
+        <div class="nutra-dark-card mt-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="nutra-logo-box">
+                    <i class="fa-solid fa-bullseye" style="color: #172116; font-size: 1.15rem;"></i>
+                </div>
+                <div class="display-6 fw-black" style="font-weight: 900; letter-spacing: -0.05em; color: #ffffff;">
+                    {{ weight_progress_percent }}%
                 </div>
             </div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 18px; margin-bottom: 4px;">
+                Camino al objetivo
+            </h3>
+            <p style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.45); margin-bottom: 16px;">
+                Ya recorriste {{ weight_lost }} de {{ profile.target_weight|default:64 }} kg. Cada semana cuenta.
+            </p>
+            <div style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 999px; overflow: hidden;">
+                <div style="height: 100%; background: #b8f34a; width: {{ weight_progress_percent }}%; border-radius: 999px;"></div>
+            </div>
+        </div>
+
+        <!-- Últimos Registros -->
+        <div class="stat-card-white mt-3">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #172116; margin-bottom: 12px;">Últimos registros</h3>
+            {% for entry in recent_weight_entries %}
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-secondary border-opacity-10 last:border-0">
+                    <div>
+                        <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Semana {{ entry.week }}</strong>
+                        <span style="font-size: 0.78rem; color: #879482;">{{ entry.date }}</span>
+                    </div>
+                    <div class="text-end">
+                        <strong class="d-block" style="font-size: 1rem; color: #172116; font-weight: 900;">{{ entry.weight }} kg</strong>
+                        <span style="font-size: 0.75rem; color: #5d8118; font-weight: 700;">Registro guardado</span>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-secondary small m-0">Aún no registraste pesajes.</p>
             {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- Modal Quick Add Food (Mobile Bottom-Sheet Optimized with Manual & AI modes) -->
-<div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border border-secondary" style="background-color: #1e293b;">
-            <!-- Modal Tabs: Manual vs IA -->
-            <div class="p-3 pb-0 border-bottom border-secondary border-opacity-25">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="modal-title fw-bold text-light m-0" id="quickAddModalLabel">
-                        <i class="fa-solid fa-plus-circle text-success me-2"></i>Añadir a <span id="modalMealTitle"></span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <ul class="nav nav-pills nav-fill mb-2" id="modalAddTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active py-1 small fw-bold" id="tab-manual-btn" data-bs-toggle="pill" data-bs-target="#tab-manual" type="button" role="tab">
-                            <i class="fa-solid fa-list me-1"></i> Catálogo
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link py-1 small fw-bold" id="tab-ai-btn" data-bs-toggle="pill" data-bs-target="#tab-ai" type="button" role="tab">
-                            <i class="fa-solid fa-wand-magic-sparkles me-1 text-info"></i> Con IA (Gemini)
-                        </button>
-                    </li>
-                </ul>
+<!-- Floating Bottom Dock -->
+<div class="nutra-bottom-dock">
+    <button type="button" class="dock-tab {% if active_tab != 'progreso' %}active{% endif %}" id="dockTabToday" onclick="switchNutraTab('today')">
+        <i class="fa-solid fa-house fs-5"></i>
+        <span>Hoy</span>
+    </button>
+    <button type="button" class="dock-tab {% if active_tab == 'progreso' %}active{% endif %}" id="dockTabProgress" onclick="switchNutraTab('progress')">
+        <i class="fa-solid fa-arrow-trend-up fs-5"></i>
+        <span>Progreso</span>
+    </button>
+
+    <!-- Prominent Center + Button -->
+    <button type="button" class="dock-fab" onclick="openAssistantModal()" title="Registrar con IA">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <button type="button" class="dock-tab" onclick="openAssistantModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+        </svg>
+        <span>Asistente</span>
+    </button>
+    <a href="{% url 'profile_settings' %}" class="dock-tab">
+        <i class="fa-solid fa-user fs-5"></i>
+        <span>Perfil</span>
+    </a>
+</div>
+
+<!-- Bottom Sheet Backdrop -->
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeAssistantModal()"></div>
+
+<!-- Bottom Sheet Assistant Drawer (Figma Make Exact Match) -->
+<div class="nutra-bottom-sheet" id="assistantSheet">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="nutra-logo-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
+                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+            </svg>
+        </div>
+        <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeAssistantModal()">
+            <i class="fa-solid fa-xmark text-dark"></i>
+        </button>
+    </div>
+
+    <h2 style="font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 20px;">
+        ¿Cómo querés registrarlo?
+    </h2>
+
+    <!-- Hidden native file input for camera -->
+    <input type="file" id="nutraCameraInput" accept="image/*" capture="environment" class="d-none" onchange="handleNutraPhotoSelected(event)">
+
+    <!-- Option 1: Sacar Foto -->
+    <button type="button" class="assistant-card-btn" onclick="triggerNutraCamera()">
+        <div class="assistant-icon-box">
+            <i class="fa-solid fa-camera"></i>
+        </div>
+        <div>
+            <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Sacar foto</strong>
+            <small style="color: #879482; font-size: 0.8rem;">La IA reconoce el plato</small>
+        </div>
+    </button>
+
+    <!-- Option 2: Enviar Audio -->
+    <button type="button" class="assistant-card-btn" id="btnNutraAudio" onclick="triggerNutraAudio()">
+        <div class="assistant-icon-box" id="audioIconBox">
+            <i class="fa-solid fa-microphone"></i>
+        </div>
+        <div>
+            <strong class="d-block" style="font-size: 0.95rem; color: #172116;" id="audioTitle">Enviar audio</strong>
+            <small style="color: #879482; font-size: 0.8rem;" id="audioSubtitle">Decilo con tus palabras</small>
+        </div>
+    </button>
+
+    <!-- Option 3: Escribir -->
+    <button type="button" class="assistant-card-btn" onclick="showNutraTextInput()">
+        <div class="assistant-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#172116">
+                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+            </svg>
+        </div>
+        <div>
+            <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Escribir</strong>
+            <small style="color: #879482; font-size: 0.8rem;">Describí lo que comiste</small>
+        </div>
+    </button>
+
+    <!-- Inline Assistant Input / Loading area -->
+    <div id="nutraAiActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: rgba(23,33,22,0.03); border: 1px solid rgba(23,33,22,0.08);">
+        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-2 p-2 rounded-3" style="background: #ffffff;">
+            <img id="nutraPhotoImg" src="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
+            <div class="flex-grow-1 overflow-hidden" style="font-size: 0.8rem;">
+                <strong id="nutraPhotoName" class="d-block text-truncate text-dark">Foto del plato</strong>
+                <span class="text-success small"><i class="fa-solid fa-check me-1"></i>Lista para análisis visual</span>
             </div>
+            <button type="button" class="btn btn-sm text-danger p-1" onclick="clearNutraPhoto()"><i class="fa-solid fa-trash"></i></button>
+        </div>
 
-            <div class="tab-content" id="modalAddTabContent">
-                <!-- Tab Manual -->
-                <div class="tab-pane fade show active" id="tab-manual" role="tabpanel">
-                    <form method="post" action="{% url 'add_meal_entry' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-                        <input type="hidden" name="meal_type" id="modalMealType">
-
-                        <div class="modal-body p-3">
-                            <!-- Search input to filter foods -->
-                            <div class="mb-3">
-                                <label for="foodSearchInput" class="form-label text-secondary small fw-bold mb-1">Buscar alimento:</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
-                                    <input type="search" id="foodSearchInput" class="form-control" placeholder="Ej. pollo, huevo, avena..." oninput="filterFoodSelect()">
-                                </div>
-                            </div>
-
-                            <!-- Food selection -->
-                            <div class="mb-3">
-                                <label for="modalFoodSelect" class="form-label text-secondary small fw-bold mb-1">Seleccionar:</label>
-                                <select name="food_item" id="modalFoodSelect" class="form-select" required size="5" onchange="updateFoodPreview()" style="font-size: 0.9rem;">
-                                    {% for food in available_foods %}
-                                    <option value="{{ food.id }}" 
-                                            data-serving="{{ food.serving_size }}"
-                                            data-calories="{{ food.calories }}" 
-                                            data-prot="{{ food.protein }}" 
-                                            data-carbs="{{ food.carbs }}" 
-                                            data-fat="{{ food.fat }}">
-                                        {{ food.name }}{% if food.brand_or_notes %} ({{ food.brand_or_notes }}){% endif %} - {{ food.calories }} kcal/{{ food.serving_size }}g
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <span class="text-secondary small fst-italic" style="font-size: 0.75rem;">¿No está en la lista?</span>
-                                    <a href="{% url 'add_food' %}" class="small text-info text-decoration-none fw-bold">
-                                        <i class="fa-solid fa-plus me-1"></i>Crear alimento
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Quantity with Quick-Chips -->
-                            <div class="mb-3">
-                                <label for="modalGramsInput" class="form-label text-secondary small fw-bold mb-1">Cantidad consumida (gramos):</label>
-                                <div class="input-group mb-2">
-                                    <input type="number" name="grams_or_amount" id="modalGramsInput" class="form-control fw-bold fs-5 text-center" value="100" min="1" step="1" inputmode="numeric" pattern="[0-9]*" required oninput="updateFoodPreview()">
-                                    <span class="input-group-text bg-black bg-opacity-25 border-secondary text-secondary">g / ml</span>
-                                </div>
-                                
-                                <div class="d-flex flex-wrap gap-2 pt-1">
-                                    <span class="chip-qty" onclick="setQuickGrams(30)">30g</span>
-                                    <span class="chip-qty" onclick="setQuickGrams(50)">50g</span>
-                                    <span class="chip-qty active" onclick="setQuickGrams(100)">100g</span>
-                                    <span class="chip-qty" onclick="setQuickGrams(150)">150g</span>
-                                    <span class="chip-qty" onclick="setQuickGrams(200)">200g</span>
-                                    <span class="chip-qty" onclick="setQuickGrams(250)">250g</span>
-                                </div>
-                            </div>
-
-                            <!-- Live preview -->
-                            <div id="foodPreviewCard" class="p-3 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 d-none">
-                                <div class="text-secondary small mb-2 fw-bold text-center" style="font-size: 0.75rem;">Aporte para esta porción:</div>
-                                <div class="d-flex justify-content-around text-center">
-                                    <div>
-                                        <div class="fs-5 fw-bold text-success" id="prevKcal">0</div>
-                                        <div class="text-secondary small" style="font-size: 0.7rem;">Kcal</div>
-                                    </div>
-                                    <div>
-                                        <div class="fs-5 fw-bold text-info" id="prevProt">0g</div>
-                                        <div class="text-secondary small" style="font-size: 0.7rem;">Proteína</div>
-                                    </div>
-                                    <div>
-                                        <div class="fs-5 fw-bold text-warning" id="prevCarbs">0g</div>
-                                        <div class="text-secondary small" style="font-size: 0.7rem;">Carbos</div>
-                                    </div>
-                                    <div>
-                                        <div class="fs-5 fw-bold text-danger" id="prevFat">0g</div>
-                                        <div class="text-secondary small" style="font-size: 0.7rem;">Grasas</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer border-secondary border-opacity-25 p-3">
-                            <button type="button" class="btn btn-outline-secondary flex-grow-1" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-success flex-grow-1">
-                                <i class="fa-solid fa-check me-1"></i>Guardar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Tab IA (Gemini 3.5 Flash Lite) -->
-                <div class="tab-pane fade" id="tab-ai" role="tabpanel">
-                    <div class="modal-body p-3">
-                        <div class="mb-3">
-                            <label for="modalAiInput" class="form-label text-secondary small fw-bold mb-1">Escribe lo que comiste o sube una foto:</label>
-                            <div class="input-group mb-2">
-                                <input type="file" id="modalAiPhotoInput" accept="image/*" capture="environment" class="d-none" onchange="handleModalAiPhotoSelect(event)">
-                                <button type="button" id="btnModalPhoto" class="btn btn-outline-secondary px-3" onclick="document.getElementById('modalAiPhotoInput').click()" title="Tomar foto del plato">
-                                    <i class="fa-solid fa-camera text-warning fs-5"></i>
-                                </button>
-                                <textarea id="modalAiInput" rows="2" class="form-control" placeholder="Ej: 3 albóndigas con una porción de puré..."></textarea>
-                            </div>
-
-                            <!-- Preview Foto en Modal -->
-                            <div id="modalPhotoPreviewBox" class="d-none align-items-center gap-2 p-2 mb-2 rounded-3 animate-fade-in" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.4);">
-                                <img id="modalPhotoPreviewImg" src="" alt="Foto comida" class="rounded-2 shadow-sm" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
-                                <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
-                                    <div class="fw-bold text-light text-truncate small" id="modalPhotoFileName">Foto seleccionada</div>
-                                    <span class="text-info" style="font-size: 0.73rem;">Gemini analizará la imagen junto con tus notas</span>
-                                </div>
-                                <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-circle" onclick="removeModalAiPhoto()" title="Eliminar foto">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="p-2 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 small text-secondary mb-3">
-                            <i class="fa-solid fa-sparkles text-info me-1"></i>
-                            Gemini 3.5 Flash Lite estimará porción, calorías y macros basándose en la imagen y texto, guardándolo en este momento del día.
-                        </div>
-                        <div id="modalAiSpinner" class="text-center text-info small d-none mb-3">
-                            <div class="spinner-border spinner-border-sm me-2"></div>
-                            <span>Calculando con Gemini 3.5 Flash Lite...</span>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-secondary border-opacity-25 p-3">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary fw-bold" onclick="submitModalAiMeal()">
-                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Calcular y Guardar
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <div class="input-group">
+            <input type="text" id="nutraAiInput" class="form-control rounded-start-pill border-end-0 py-2 px-3" placeholder="Ej: bowl de pollo con arroz integral..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
+            <button type="button" id="btnSubmitNutraAi" class="btn btn-dark rounded-end-pill px-4 fw-bold" onclick="submitNutraAssistant()">
+                <span>Analizar</span>
+            </button>
+        </div>
+        <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success">
+            <div class="spinner-border spinner-border-sm me-2"></div>
+            <span>Gemini IA calculando porciones y calorías...</span>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_scripts %}
+<!-- Modal para Registrar Peso Semanal -->
+<div class="modal fade" id="weightModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3" style="background: #ffffff; color: #172116;">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-black m-0" style="font-weight: 900;">Registrar peso semanal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'weight_tracker' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'dashboard' %}?tab=progreso">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-secondary">Peso (kg)</label>
+                    <input type="number" step="0.1" name="weight" class="form-control form-control-lg rounded-3 fw-bold" value="{{ current_weight }}" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">Fecha</label>
+                    <input type="date" name="date" class="form-control rounded-3" value="{% now 'Y-m-d' %}" required>
+                </div>
+                <button type="submit" class="btn w-100 py-3 fw-bold rounded-pill" style="background: #b8f34a; color: #10150f;">
+                    Guardar registro
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-    let quickModal = null;
-    let voiceRecognition = null;
-    let isListening = false;
+    function switchNutraTab(tab) {
+        const viewToday = document.getElementById('viewToday');
+        const viewProgress = document.getElementById('viewProgress');
+        const tabToday = document.getElementById('dockTabToday');
+        const tabProgress = document.getElementById('dockTabProgress');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const modalEl = document.getElementById('quickAddModal');
-        if (modalEl) quickModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        setupVoiceRecognition();
-    });
-
-    function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-    }
-
-    function setAiExample(text) {
-        document.getElementById('aiMealInput').value = text;
-        document.getElementById('aiMealInput').focus();
-    }
-
-    function triggerCameraInput(inputId) {
-        const input = document.getElementById(inputId);
-        if (input) {
-            input.value = '';
-            input.click();
+        if (tab === 'progress') {
+            viewToday.classList.add('d-none');
+            viewProgress.classList.remove('d-none');
+            tabToday.classList.remove('active');
+            tabProgress.classList.add('active');
+            window.history.replaceState(null, '', '?tab=progreso');
+        } else {
+            viewToday.classList.remove('d-none');
+            viewProgress.classList.add('d-none');
+            tabToday.classList.add('active');
+            tabProgress.classList.remove('active');
+            window.history.replaceState(null, '', window.location.pathname);
         }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function toggleAllMeals(expand) {
-        document.querySelectorAll('[id^="collapseMeal"]').forEach(el => {
-            const collapseInstance = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
-            if (expand) {
-                collapseInstance.show();
-            } else {
-                collapseInstance.hide();
-            }
-        });
+    function openAssistantModal() {
+        document.getElementById('sheetBackdrop').classList.add('open');
+        document.getElementById('assistantSheet').classList.add('open');
     }
 
-    // Voice recognition using Web Speech API
-    function setupVoiceRecognition() {
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRec) {
-            try {
-                voiceRecognition = new SpeechRec();
-                voiceRecognition.lang = 'es-ES';
-                voiceRecognition.continuous = false;
-                voiceRecognition.interimResults = false;
-
-                voiceRecognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    const input = document.getElementById('aiMealInput');
-                    if (input) input.value = (input.value ? input.value + ' ' : '') + transcript;
-                    stopVoiceRecognition();
-                };
-
-                voiceRecognition.onerror = () => {
-                    stopVoiceRecognition();
-                };
-
-                voiceRecognition.onend = () => {
-                    stopVoiceRecognition();
-                };
-            } catch (e) {
-                console.warn("SpeechRec error:", e);
-            }
-        }
+    function closeAssistantModal() {
+        document.getElementById('sheetBackdrop').classList.remove('open');
+        document.getElementById('assistantSheet').classList.remove('open');
     }
 
-    function toggleVoiceInput() {
+    function openWeightModal() {
+        const m = new bootstrap.Modal(document.getElementById('weightModal'));
+        m.show();
+    }
+
+    // Camera Support
+    let nutraPhotoB64 = null;
+    let nutraPhotoMime = null;
+
+    function triggerNutraCamera() {
+        const input = document.getElementById('nutraCameraInput');
+        if (input) input.click();
+    }
+
+    function handleNutraPhotoSelected(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const full = evt.target.result;
+            const parts = full.split(',');
+            nutraPhotoMime = parts[0].split(':')[1].split(';')[0];
+            nutraPhotoB64 = parts[1];
+
+            document.getElementById('nutraPhotoImg').src = full;
+            document.getElementById('nutraPhotoName').innerText = file.name || 'Foto del plato';
+            document.getElementById('nutraPhotoPreviewBox').classList.remove('d-none');
+            document.getElementById('nutraPhotoPreviewBox').classList.add('d-flex');
+            showNutraTextInput();
+            document.getElementById('nutraAiInput').placeholder = 'Agrega detalles opcionales o presiona Analizar...';
+            document.getElementById('nutraAiInput').focus();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearNutraPhoto() {
+        nutraPhotoB64 = null;
+        nutraPhotoMime = null;
+        document.getElementById('nutraCameraInput').value = '';
+        document.getElementById('nutraPhotoPreviewBox').classList.add('d-none');
+        document.getElementById('nutraPhotoPreviewBox').classList.remove('d-flex');
+    }
+
+    function showNutraTextInput() {
+        document.getElementById('nutraAiActiveBox').classList.remove('d-none');
+        document.getElementById('nutraAiInput').focus();
+    }
+
+    // Speech Audio
+    let nutraSpeechRec = null;
+    let isNutraRecording = false;
+
+    function triggerNutraAudio() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRec) {
-            alert("El dictado por voz web no está disponible en este navegador. Puedes escribir o usar el micrófono del teclado de tu teléfono.");
+            alert('El dictado por voz no está soportado en este navegador web. Podés usar el teclado o la cámara.');
+            showNutraTextInput();
             return;
         }
-        if (!voiceRecognition) {
-            setupVoiceRecognition();
-        }
-        if (!voiceRecognition) return;
 
-        if (!isListening) {
-            isListening = true;
-            const btn = document.getElementById('btnVoiceInput');
-            if (btn) {
-                btn.classList.add('btn-danger', 'mic-active');
-                btn.classList.remove('btn-outline-secondary');
-            }
-            try {
-                voiceRecognition.start();
-            } catch (e) {
-                console.warn(e);
-            }
+        if (!nutraSpeechRec) {
+            nutraSpeechRec = new SpeechRec();
+            nutraSpeechRec.lang = 'es-ES';
+            nutraSpeechRec.continuous = false;
+            nutraSpeechRec.interimResults = false;
+            nutraSpeechRec.onresult = (evt) => {
+                const text = evt.results[0][0].transcript;
+                const input = document.getElementById('nutraAiInput');
+                input.value = (input.value ? input.value + ' ' : '') + text;
+                stopNutraAudio();
+                showNutraTextInput();
+            };
+            nutraSpeechRec.onerror = () => stopNutraAudio();
+            nutraSpeechRec.onend = () => stopNutraAudio();
+        }
+
+        if (isNutraRecording) {
+            stopNutraAudio();
         } else {
-            stopVoiceRecognition();
+            isNutraRecording = true;
+            document.getElementById('audioTitle').innerText = 'Escuchando...';
+            document.getElementById('audioSubtitle').innerText = 'Hablá ahora claramente';
+            document.getElementById('audioIconBox').style.background = '#f87171';
+            showNutraTextInput();
+            try { nutraSpeechRec.start(); } catch(e) {}
         }
     }
 
-    function stopVoiceRecognition() {
-        isListening = false;
-        const btn = document.getElementById('btnVoiceInput');
-        if (btn) {
-            btn.classList.remove('btn-danger', 'mic-active');
-            btn.classList.add('btn-outline-secondary');
-        }
-        if (voiceRecognition) {
-            try { voiceRecognition.stop(); } catch(e) {}
-        }
+    function stopNutraAudio() {
+        isNutraRecording = false;
+        document.getElementById('audioTitle').innerText = 'Enviar audio';
+        document.getElementById('audioSubtitle').innerText = 'Decilo con tus palabras';
+        document.getElementById('audioIconBox').style.background = '#e7f7c8';
+        try { nutraSpeechRec?.stop(); } catch(e) {}
     }
 
-    let currentAiMealPhoto = null;
-    let currentModalAiPhoto = null;
+    async function submitNutraAssistant() {
+        const input = document.getElementById('nutraAiInput');
+        const text = input ? input.value.trim() : '';
 
-    function handleAiMealPhotoSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) {
-            alert("La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.");
-            event.target.value = '';
+        if (!text && !nutraPhotoB64) {
+            alert('Por favor describe lo que comiste o saca una foto para que la IA lo analice.');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const fullData = e.target.result;
-            const parts = fullData.split(',');
-            const mime = parts[0].split(':')[1].split(';')[0];
-            const b64 = parts[1];
-
-            currentAiMealPhoto = { b64: b64, mime: mime };
-
-            const box = document.getElementById('aiPhotoPreviewBox');
-            const img = document.getElementById('aiPhotoPreviewImg');
-            const name = document.getElementById('aiPhotoFileName');
-            if (box && img) {
-                img.src = fullData;
-                if (name) name.innerText = file.name || "Foto del plato";
-                box.classList.remove('d-none');
-                box.classList.add('d-flex');
-            }
-
-            const btn = document.getElementById('btnPhotoInput');
-            if (btn) {
-                btn.classList.remove('btn-outline-secondary');
-                btn.classList.add('btn-warning', 'text-dark');
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function removeAiMealPhoto() {
-        currentAiMealPhoto = null;
-        const fileInput = document.getElementById('aiMealPhotoInput');
-        if (fileInput) fileInput.value = '';
-        const box = document.getElementById('aiPhotoPreviewBox');
-        if (box) {
-            box.classList.add('d-none');
-            box.classList.remove('d-flex');
-        }
-        const btn = document.getElementById('btnPhotoInput');
-        if (btn) {
-            btn.classList.add('btn-outline-secondary');
-            btn.classList.remove('btn-warning', 'text-dark');
-        }
-    }
-
-    function handleModalAiPhotoSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) {
-            alert("La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.");
-            event.target.value = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const fullData = e.target.result;
-            const parts = fullData.split(',');
-            const mime = parts[0].split(':')[1].split(';')[0];
-            const b64 = parts[1];
-
-            currentModalAiPhoto = { b64: b64, mime: mime };
-
-            const box = document.getElementById('modalPhotoPreviewBox');
-            const img = document.getElementById('modalPhotoPreviewImg');
-            const name = document.getElementById('modalPhotoFileName');
-            if (box && img) {
-                img.src = fullData;
-                if (name) name.innerText = file.name || "Foto del plato";
-                box.classList.remove('d-none');
-                box.classList.add('d-flex');
-            }
-
-            const btn = document.getElementById('btnModalPhoto');
-            if (btn) {
-                btn.classList.remove('btn-outline-secondary');
-                btn.classList.add('btn-warning', 'text-dark');
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function removeModalAiPhoto() {
-        currentModalAiPhoto = null;
-        const fileInput = document.getElementById('modalAiPhotoInput');
-        if (fileInput) fileInput.value = '';
-        const box = document.getElementById('modalPhotoPreviewBox');
-        if (box) {
-            box.classList.add('d-none');
-            box.classList.remove('d-flex');
-        }
-        const btn = document.getElementById('btnModalPhoto');
-        if (btn) {
-            btn.classList.add('btn-outline-secondary');
-            btn.classList.remove('btn-warning', 'text-dark');
-        }
-    }
-
-    // Submit meal to Gemini 3.5 Flash Lite API
-    async function submitAiMeal() {
-        const input = document.getElementById('aiMealInput');
-        const text = input.value.trim();
-        const date = document.getElementById('selectedDateInput').value;
-        const spinner = document.getElementById('aiLoadingIndicator');
-        const submitBtn = document.getElementById('btnAiSubmit');
-
-        if (!text && !currentAiMealPhoto) {
-            alert('Por favor escribe lo que comiste o toma una foto para que Gemini la analice.');
-            input.focus();
-            return;
-        }
-
-        submitBtn.disabled = true;
+        const btn = document.getElementById('btnSubmitNutraAi');
+        const spinner = document.getElementById('nutraAiSpinner');
+        btn.disabled = true;
         spinner.classList.remove('d-none');
 
         try {
@@ -772,13 +958,12 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
+                    'X-CSRFToken': '{{ csrf_token }}'
                 },
                 body: JSON.stringify({
                     text: text,
-                    image_b64: currentAiMealPhoto ? currentAiMealPhoto.b64 : null,
-                    image_mime_type: currentAiMealPhoto ? currentAiMealPhoto.mime : null,
-                    date: date,
+                    image_b64: nutraPhotoB64,
+                    image_mime_type: nutraPhotoMime,
                     meal_type: 'almuerzo',
                     auto_save: true
                 })
@@ -786,144 +971,16 @@
 
             const data = await resp.json();
             if (data.success) {
-                // Reload to refresh calories and entries
                 window.location.reload();
             } else {
-                alert('Error de IA: ' + (data.error || 'No se pudo analizar la comida.'));
+                alert('IA: ' + (data.error || 'No se pudo interpretar el plato.'));
             }
         } catch (e) {
             alert('Error al comunicarse con el servidor: ' + e);
         } finally {
-            submitBtn.disabled = false;
+            btn.disabled = false;
             spinner.classList.add('d-none');
         }
-    }
-
-    // Modal AI submit
-    async function submitModalAiMeal() {
-        const input = document.getElementById('modalAiInput');
-        const text = input.value.trim();
-        const date = document.getElementById('selectedDateInput').value;
-        const mealType = document.getElementById('modalMealType').value || 'almuerzo';
-        const spinner = document.getElementById('modalAiSpinner');
-
-        if (!text && !currentModalAiPhoto) {
-            alert('Por favor escribe tu comida o saca una foto.');
-            input.focus();
-            return;
-        }
-
-        spinner.classList.remove('d-none');
-
-        try {
-            const resp = await fetch('{% url "ai_parse_meal" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
-                },
-                body: JSON.stringify({
-                    text: text,
-                    image_b64: currentModalAiPhoto ? currentModalAiPhoto.b64 : null,
-                    image_mime_type: currentModalAiPhoto ? currentModalAiPhoto.mime : null,
-                    date: date,
-                    meal_type: mealType,
-                    auto_save: true
-                })
-            });
-
-            const data = await resp.json();
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Error de IA: ' + (data.error || 'No se pudo analizar.'));
-            }
-        } catch (e) {
-            alert('Error: ' + e);
-        } finally {
-            spinner.classList.add('d-none');
-        }
-    }
-
-    function openQuickAddModal(mealCode, mealLabel) {
-        const modalEl = document.getElementById('quickAddModal');
-        if (!quickModal && modalEl) {
-            quickModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        }
-        const mealTypeEl = document.getElementById('modalMealType');
-        if (mealTypeEl) mealTypeEl.value = mealCode;
-        const titleEl = document.getElementById('modalMealTitle');
-        if (titleEl) titleEl.innerText = mealLabel;
-        const searchEl = document.getElementById('foodSearchInput');
-        if (searchEl) searchEl.value = '';
-        const aiIn = document.getElementById('modalAiInput');
-        if (aiIn) aiIn.value = '';
-        removeModalAiPhoto();
-        filterFoodSelect();
-        
-        const sel = document.getElementById('modalFoodSelect');
-        if (sel && sel.options.length > 0 && sel.selectedIndex === -1) {
-            sel.selectedIndex = 0;
-        }
-        updateFoodPreview();
-        if (quickModal) {
-            quickModal.show();
-        }
-    }
-
-    function setQuickGrams(amount) {
-        document.getElementById('modalGramsInput').value = amount;
-        document.querySelectorAll('.chip-qty').forEach(chip => {
-            chip.classList.toggle('active', chip.innerText === `${amount}g`);
-        });
-        updateFoodPreview();
-    }
-
-    function filterFoodSelect() {
-        const query = document.getElementById('foodSearchInput').value.toLowerCase();
-        const select = document.getElementById('modalFoodSelect');
-        const options = select.options;
-        let firstVisible = null;
-
-        for (let i = 0; i < options.length; i++) {
-            const text = options[i].text.toLowerCase();
-            if (text.includes(query)) {
-                options[i].style.display = '';
-                if (!firstVisible) firstVisible = options[i];
-            } else {
-                options[i].style.display = 'none';
-            }
-        }
-        if (firstVisible && select.selectedOptions[0]?.style.display === 'none') {
-            firstVisible.selected = true;
-        }
-        updateFoodPreview();
-    }
-
-    function updateFoodPreview() {
-        const select = document.getElementById('modalFoodSelect');
-        const previewCard = document.getElementById('foodPreviewCard');
-        const selectedOpt = select.selectedOptions[0];
-        const grams = parseFloat(document.getElementById('modalGramsInput').value) || 0;
-
-        if (!selectedOpt || selectedOpt.style.display === 'none' || grams <= 0) {
-            previewCard.classList.add('d-none');
-            return;
-        }
-
-        const baseServing = parseFloat(selectedOpt.dataset.serving) || 100;
-        const baseKcal = parseFloat(selectedOpt.dataset.calories) || 0;
-        const baseProt = parseFloat(selectedOpt.dataset.prot) || 0;
-        const baseCarbs = parseFloat(selectedOpt.dataset.carbs) || 0;
-        const baseFat = parseFloat(selectedOpt.dataset.fat) || 0;
-
-        const factor = grams / baseServing;
-        document.getElementById('prevKcal').innerText = (baseKcal * factor).toFixed(1) + ' kcal';
-        document.getElementById('prevProt').innerText = (baseProt * factor).toFixed(1) + 'g';
-        document.getElementById('prevCarbs').innerText = (baseCarbs * factor).toFixed(1) + 'g';
-        document.getElementById('prevFat').innerText = (baseFat * factor).toFixed(1) + 'g';
-
-        previewCard.classList.remove('d-none');
     }
 </script>
 {% endblock %}

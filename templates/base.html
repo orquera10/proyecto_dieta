@@ -451,6 +451,7 @@
 </head>
 <body>
     <!-- Top Navigation Bar -->
+    {% if request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'onboarding' %}
     <nav class="navbar navbar-expand-lg navbar-dark glass-nav sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'dashboard' %}">
@@ -541,6 +542,7 @@
             </div>
         </div>
     </nav>
+    {% endif %}
 
     <!-- Main Content Area -->
     <main class="container py-3 flex-grow-1">
@@ -576,7 +578,7 @@
     </main>
 
     <!-- Mobile Floating AI Button (FAB Circle, elevated above bottom menu) -->
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'onboarding' %}
     <div class="position-fixed d-lg-none" style="bottom: calc(88px + var(--safe-bottom)); right: 16px; z-index: 1040;">
         <button type="button" class="btn rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 border border-info border-opacity-75" data-bs-toggle="modal" data-bs-target="#globalAiModal" title="Gemini 3.5 Flash Lite" style="width: 56px; height: 56px; background: linear-gradient(135deg, #0284c7 0%, #0f766e 100%); box-shadow: 0 8px 24px rgba(2, 132, 199, 0.5); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
             <i class="fa-solid fa-wand-magic-sparkles text-warning fs-4"></i>
@@ -766,7 +768,7 @@
     {% endif %}
 
     <!-- Mobile Bottom Navigation Bar -->
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'onboarding' %}
     <nav class="mobile-bottom-nav">
         <a href="{% url 'dashboard' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="fa-solid fa-calendar-day"></i>

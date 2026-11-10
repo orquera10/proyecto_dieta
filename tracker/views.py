@@ -157,12 +157,24 @@ def dashboard_view(request):
         total_carbs += subtotal_carbs
         total_fat += subtotal_fat
 
+        summary = ", ".join([e.food_item.name for e in cat_entries]) if cat_entries else "Todavía no registraste alimentos"
+        first_entry = cat_entries[0] if cat_entries else None
+        time_str = first_entry.created_at.strftime('%H:%M') if first_entry else {
+            'desayuno': '08:20', 'almuerzo': '13:10', 'merienda': '17:00', 'cena': '21:00', 'snack': '11:00'
+        }.get(code, '12:00')
+        photo_entry = next((e for e in cat_entries if e.food_item.photo), None)
+        photo_url = photo_entry.food_item.photo.url if photo_entry else None
+
         meals_data.append({
             'code': code,
             'label': label,
             'icon': icon,
             'entries': cat_entries,
-            'subtotal_cal': round(subtotal_cal, 1),
+            'has_entries': bool(cat_entries),
+            'summary': summary,
+            'time_str': time_str,
+            'photo_url': photo_url,
+            'subtotal_cal': int(round(subtotal_cal, 0)),
             'subtotal_prot': round(subtotal_prot, 1),
             'subtotal_carbs': round(subtotal_carbs, 1),
             'subtotal_fat': round(subtotal_fat, 1),
@@ -189,7 +201,51 @@ def dashboard_view(request):
     cal_ratio = min(Decimal('1.0'), total_calories / Decimal(str(calorie_target))) if calorie_target > 0 else Decimal('0.0')
     cal_dashoffset = round(Decimal('452.39') * (Decimal('1.0') - cal_ratio), 2)
 
-    # Weight tracking for the day
+    # Weekly Weight Progress calculation for Figma Progreso tab
+    weight_logs = list(WeightLog.objects.filter(user=request.user).order_by('date'))
+    start_weight = weight_logs[0].weight if weight_logs else (profile.target_weight or Decimal('72.0'))
+    current_weight = weight_logs[-1].weight if weight_logs else start_weight
+    target_weight = profile.target_weight or Decimal('64.0')
+    weight_lost = max(Decimal('0.0'), start_weight - current_weight)
+    weight_to_go = max(Decimal('0.0'), current_weight - target_weight)
+    total_to_lose = max(Decimal('0.1'), start_weight - target_weight)
+    weight_progress_percent = min(100, max(0, int((weight_lost / total_to_lose) * 100)))
+    avg_weekly_lost = round(weight_lost / max(1, len(weight_logs) - 1), 1) if len(weight_logs) > 1 else Decimal('0.6')
+
+    chart_width = 720
+    chart_height = 230
+    chart_padding = 24
+    all_weights = [float(l.weight) for l in weight_logs] if weight_logs else [float(start_weight)]
+    min_chart_weight = min(all_weights + [float(target_weight)]) - 0.5
+    max_chart_weight = max(all_weights) + 0.5
+    weight_range = max(1.0, max_chart_weight - min_chart_weight)
+
+    weight_points = []
+    if weight_logs:
+        for idx, l in enumerate(weight_logs):
+            x = chart_padding + (idx / max(len(weight_logs) - 1, 1)) * (chart_width - chart_padding * 2)
+            y = chart_padding + ((max_chart_weight - float(l.weight)) / weight_range) * (chart_height - chart_padding * 2)
+            weight_points.append({
+                'week': idx + 1,
+                'date': l.date.strftime('%d %b'),
+                'weight': float(l.weight),
+                'x': round(x, 1),
+                'y': round(y, 1),
+            })
+    else:
+        weight_points = [{
+            'week': 1,
+            'date': timezone.localdate().strftime('%d %b'),
+            'weight': float(start_weight),
+            'x': chart_padding,
+            'y': chart_height / 2,
+        }]
+
+    chart_line_points = " ".join([f"{p['x']},{p['y']}" for p in weight_points])
+    chart_area_points = f"{chart_padding},{chart_height - chart_padding} {chart_line_points} {chart_width - chart_padding},{chart_height - chart_padding}"
+    recent_weight_entries = list(reversed(weight_points))[:6]
+
+    # Daily weight log for today
     daily_weight = WeightLog.objects.filter(user=request.user, date=selected_date).first()
     recent_weights = WeightLog.objects.filter(user=request.user).order_by('-date')[:7]
 
@@ -220,6 +276,19 @@ def dashboard_view(request):
         'daily_weight': daily_weight,
         'recent_weights': recent_weights,
         'available_foods': available_foods,
+        # Progreso stats
+        'start_weight': round(start_weight, 1),
+        'current_weight': round(current_weight, 1),
+        'target_weight': round(target_weight, 1),
+        'weight_lost': round(weight_lost, 1),
+        'weight_to_go': round(weight_to_go, 1),
+        'weight_progress_percent': weight_progress_percent,
+        'avg_weekly_lost': round(avg_weekly_lost, 1),
+        'chart_line_points': chart_line_points,
+        'chart_area_points': chart_area_points,
+        'weight_points': weight_points,
+        'recent_weight_entries': recent_weight_entries,
+        'active_tab': request.GET.get('tab', 'today'),
     }
     return render(request, 'tracker/dashboard.html', context)
 
