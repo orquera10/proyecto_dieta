@@ -8,15 +8,25 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
+            'gender',
+            'age',
+            'height',
+            'activity_level',
+            'deficit_rate',
+            'current_weight',
+            'target_weight',
             'calorie_target',
             'maintenance_calories',
             'protein_target',
             'carbs_target',
-            'fat_target',
-            'current_weight',
-            'target_weight'
+            'fat_target'
         ]
         widgets = {
+            'gender': forms.Select(attrs={'class': 'form-select'}),
+            'age': forms.NumberInput(attrs={'class': 'form-control', 'min': 14, 'max': 110}),
+            'height': forms.NumberInput(attrs={'class': 'form-control', 'min': 100, 'max': 240}),
+            'activity_level': forms.TextInput(attrs={'class': 'form-control'}),
+            'deficit_rate': forms.TextInput(attrs={'class': 'form-control'}),
             'calorie_target': forms.NumberInput(attrs={'class': 'form-control', 'min': 500, 'max': 10000}),
             'maintenance_calories': forms.NumberInput(attrs={'class': 'form-control', 'min': 500, 'max': 10000}),
             'protein_target': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 500}),
