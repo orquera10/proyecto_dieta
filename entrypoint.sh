@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+echo "==> Creando directorios de media..."
+mkdir -p /app/media/meal_photos /app/media/food_photos
+chmod -R 777 /app/media || true
+
 echo "==> Aplicando migraciones de base de datos..."
 python manage.py migrate --noinput
 

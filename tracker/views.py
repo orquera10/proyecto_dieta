@@ -1,8 +1,10 @@
+import os
 import datetime
 import logging
 from decimal import Decimal
 
 logger = logging.getLogger(__name__)
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
@@ -166,13 +168,19 @@ def dashboard_view(request):
             'desayuno': '08:20', 'almuerzo': '13:10', 'merienda': '17:00', 'cena': '21:00', 'snack': '11:00'
         }.get(code, '12:00')
 
+        def get_valid_photo_url(field):
+            if not field:
+                return None
+            try:
+                if os.path.exists(field.path):
+                    return field.url
+            except Exception:
+                pass
+            return None
+
         entries_detail = []
         for e in cat_entries:
-            e_photo = ''
-            if getattr(e, 'photo', None) and e.photo:
-                e_photo = e.photo.url
-            elif getattr(e.food_item, 'photo', None) and e.food_item.photo:
-                e_photo = e.food_item.photo.url
+            e_photo = get_valid_photo_url(getattr(e, 'photo', None)) or get_valid_photo_url(getattr(e.food_item, 'photo', None)) or ''
 
             entries_detail.append({
                 'id': e.id,
@@ -185,20 +193,19 @@ def dashboard_view(request):
                 'photo': e_photo
             })
 
-        photo_entry = next((e for e in cat_entries if (getattr(e, 'photo', None) and e.photo) or (getattr(e.food_item, 'photo', None) and e.food_item.photo)), None)
         photo_url = None
-        if photo_entry:
-            if getattr(photo_entry, 'photo', None) and photo_entry.photo:
-                photo_url = photo_entry.photo.url
-            elif getattr(photo_entry.food_item, 'photo', None) and photo_entry.food_item.photo:
-                photo_url = photo_entry.food_item.photo.url
+        for e in cat_entries:
+            url = get_valid_photo_url(getattr(e, 'photo', None)) or get_valid_photo_url(getattr(e.food_item, 'photo', None))
+            if url:
+                photo_url = url
+                break
 
         default_photos = {
-            'desayuno': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=120&auto=format&fit=crop&q=80',
-            'almuerzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80',
-            'merienda': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120&auto=format&fit=crop&q=80',
-            'cena': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=120&auto=format&fit=crop&q=80',
-            'snack': 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=120&auto=format&fit=crop&q=80',
+            'desayuno': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop&q=80',
+            'almuerzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+            'merienda': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+            'cena': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
+            'snack': 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&auto=format&fit=crop&q=80',
         }
         display_photo = photo_url if photo_url else default_photos.get(code, '')
 
@@ -666,6 +673,8 @@ def ai_parse_meal_view(request):
                     img_bytes = base64.b64decode(image_b64)
                     ext = 'png' if 'png' in image_mime_type else 'jpg'
                     fname = f"meal_{uuid.uuid4().hex[:8]}.{ext}"
+                    os.makedirs(settings.MEDIA_ROOT / 'meal_photos', exist_ok=True)
+                    os.makedirs(settings.MEDIA_ROOT / 'food_photos', exist_ok=True)
                     photo_file = (fname, img_bytes)
                 except Exception as err:
                     logger.error(f"Error decodificando foto base64: {err}")

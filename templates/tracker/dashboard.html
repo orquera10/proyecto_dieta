@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load l10n %}
 
 {% block title %}NÜTRA | Tu día en balance{% endblock %}
 
@@ -490,7 +491,7 @@
                     <circle cx="90" cy="90" r="72" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"></circle>
                     <circle cx="90" cy="90" r="72" fill="none" stroke="#b8f34a" stroke-width="12" stroke-linecap="round"
                             stroke-dasharray="452.39"
-                            stroke-dashoffset="{{ cal_dashoffset }}"
+                            stroke-dashoffset="{{ cal_dashoffset|unlocalize }}"
                             style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1); filter: drop-shadow(0 0 10px rgba(184, 243, 74, 0.45));"></circle>
                 </svg>
                 <div class="ring-inner-text">
@@ -574,7 +575,9 @@
                     <div class="meal-card-clean" onclick="openMealDetailModal('{{ meal.code }}')">
                         <div class="meal-icon-thumb">
                             {% if meal.display_photo %}
-                                <img src="{{ meal.display_photo }}" alt="{{ meal.label }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img src="{{ meal.display_photo }}" alt="{{ meal.label }}" 
+                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80';"
+                                     style="width: 100%; height: 100%; object-fit: cover;">
                             {% else %}
                                 <i class="fa-solid {{ meal.icon }}" style="color: #172116; font-size: 1.1rem;"></i>
                             {% endif %}
@@ -704,9 +707,9 @@
                         <polygon points="{{ chart_area_points }}" fill="url(#weightAreaGrad)"/>
                         <polyline points="{{ chart_line_points }}" fill="none" stroke="#79a522" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                         {% for pt in weight_points %}
-                            <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="8" fill="#ffffff" stroke="#79a522" stroke-width="3"/>
-                            <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="4" fill="#79a522"/>
-                            <text x="{{ pt.x }}" y="215" text-anchor="middle" fill="#879482" font-size="12" font-weight="700">S{{ pt.week }}</text>
+                            <circle cx="{{ pt.x|unlocalize }}" cy="{{ pt.y|unlocalize }}" r="8" fill="#ffffff" stroke="#79a522" stroke-width="3"/>
+                            <circle cx="{{ pt.x|unlocalize }}" cy="{{ pt.y|unlocalize }}" r="4" fill="#79a522"/>
+                            <text x="{{ pt.x|unlocalize }}" y="215" text-anchor="middle" fill="#879482" font-size="12" font-weight="700">S{{ pt.week }}</text>
                         {% endfor %}
                     {% endif %}
                 </svg>
@@ -814,7 +817,9 @@
 
     <!-- Photo Preview (Captured photo or dish image) -->
     <div id="mealDetailPhotoBox" class="mb-3 position-relative rounded-4 overflow-hidden" style="height: 180px; background: #e8ecdf;">
-        <img id="mealDetailPhotoImg" src="" alt="Foto de comida" style="width: 100%; height: 100%; object-fit: cover;">
+        <img id="mealDetailPhotoImg" src="" alt="Foto de comida" 
+             onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';"
+             style="width: 100%; height: 100%; object-fit: cover;">
         <span id="mealDetailPhotoTag" class="position-absolute bottom-0 start-0 m-2 px-2.5 py-1 rounded-pill small fw-bold" style="background: rgba(23,33,22,0.75); color: #ffffff; font-size: 0.72rem; backdrop-filter: blur(4px);">
             <i class="fa-solid fa-camera me-1"></i> Foto de tu plato
         </span>
@@ -967,8 +972,9 @@
         <button type="button" class="assistant-moment-pill" data-meal="snack" onclick="selectAssistantMeal('snack')">Snack</button>
     </div>
 
-    <!-- Hidden native file input for camera/gallery fallback -->
-    <input type="file" id="nutraCameraInput" accept="image/*" capture="environment" class="d-none" onchange="handleNutraPhotoSelected(event)">
+    <!-- Hidden inputs for camera capture and gallery file picker -->
+    <input type="file" id="nutraCameraInput" accept="image/*" capture="camera" class="d-none" onchange="handleNutraPhotoSelected(event)">
+    <input type="file" id="nutraGalleryInput" accept="image/*" class="d-none" onchange="handleNutraPhotoSelected(event)">
 
     <!-- Option 1: Sacar Foto (Direct In-App Camera) -->
     <button type="button" class="assistant-card-btn" onclick="triggerNutraCamera()">
@@ -977,11 +983,22 @@
         </div>
         <div>
             <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Sacar foto</strong>
-            <small style="color: #879482; font-size: 0.8rem;">La cámara enfoca y la IA reconoce el plato</small>
+            <small style="color: #879482; font-size: 0.8rem;">Abrí la cámara y enfocá tu plato en vivo</small>
         </div>
     </button>
 
-    <!-- Option 2: Enviar Audio -->
+    <!-- Option 2: Subir de Galería -->
+    <button type="button" class="assistant-card-btn" onclick="triggerNutraGallery()">
+        <div class="assistant-icon-box" style="background: #eef2e6;">
+            <i class="fa-solid fa-images text-dark"></i>
+        </div>
+        <div>
+            <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Subir de galería</strong>
+            <small style="color: #879482; font-size: 0.8rem;">Elegí una foto guardada de tu comida</small>
+        </div>
+    </button>
+
+    <!-- Option 3: Enviar Audio -->
     <button type="button" class="assistant-card-btn" id="btnNutraAudio" onclick="triggerNutraAudio()">
         <div class="assistant-icon-box" id="audioIconBox">
             <i class="fa-solid fa-microphone"></i>
@@ -992,7 +1009,7 @@
         </div>
     </button>
 
-    <!-- Option 3: Escribir -->
+    <!-- Option 4: Escribir -->
     <button type="button" class="assistant-card-btn" onclick="showNutraTextInput()">
         <div class="assistant-icon-box">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#172116">
@@ -1122,6 +1139,14 @@
         if (detailSheet) detailSheet.classList.remove('open');
     }
 
+    const defaultCategoryPhotos = {
+        'desayuno': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop&q=80',
+        'almuerzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+        'merienda': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+        'cena': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
+        'snack': 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&auto=format&fit=crop&q=80'
+    };
+
     function openMealDetailModal(mealCode) {
         closeAllModals();
         currentDetailMealCode = mealCode;
@@ -1138,16 +1163,23 @@
         const photoBox = document.getElementById('mealDetailPhotoBox');
         const photoImg = document.getElementById('mealDetailPhotoImg');
         const photoTag = document.getElementById('mealDetailPhotoTag');
-        if (meal.display_photo) {
+        const fallbackUrl = defaultCategoryPhotos[mealCode] || defaultCategoryPhotos['almuerzo'];
+
+        photoBox.classList.remove('d-none');
+        photoImg.onerror = function() {
+            this.onerror = null;
+            this.src = fallbackUrl;
+        };
+
+        if (meal.photo_url) {
+            photoImg.src = meal.photo_url;
+            photoTag.innerHTML = '<i class="fa-solid fa-camera me-1"></i> Foto de tu plato';
+        } else if (meal.display_photo) {
             photoImg.src = meal.display_photo;
-            photoBox.classList.remove('d-none');
-            if (meal.photo_url) {
-                photoTag.innerHTML = '<i class="fa-solid fa-camera me-1"></i> Foto de tu plato';
-            } else {
-                photoTag.innerHTML = '<i class="fa-solid fa-utensils me-1"></i> Foto sugerida';
-            }
+            photoTag.innerHTML = '<i class="fa-solid fa-utensils me-1"></i> Foto sugerida';
         } else {
-            photoBox.classList.add('d-none');
+            photoImg.src = fallbackUrl;
+            photoTag.innerHTML = '<i class="fa-solid fa-utensils me-1"></i> Foto sugerida';
         }
 
         // Render entries list
@@ -1362,11 +1394,7 @@
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { ideal: cameraFacingMode },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
+                    video: { facingMode: { ideal: cameraFacingMode } },
                     audio: false
                 });
                 cameraStream = stream;
@@ -1375,12 +1403,29 @@
                 await video.play();
                 document.getElementById('cameraViewfinderModal').classList.remove('d-none');
                 return;
-            } catch (err) {
-                console.warn('getUserMedia falló o fue denegado, abriendo selector de archivos/cámara nativo', err);
+            } catch (err1) {
+                console.warn('getUserMedia con constraints falló, reintentando con video simple:', err1);
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    cameraStream = stream;
+                    const video = document.getElementById('cameraLiveVideo');
+                    video.srcObject = stream;
+                    await video.play();
+                    document.getElementById('cameraViewfinderModal').classList.remove('d-none');
+                    return;
+                } catch (err2) {
+                    console.warn('getUserMedia no disponible o bloqueado, usando cámara nativa:', err2);
+                }
             }
         }
         // Fallback to native capture file input
         fallbackToFilePicker();
+    }
+
+    function triggerNutraGallery() {
+        closeCameraViewfinder();
+        const input = document.getElementById('nutraGalleryInput');
+        if (input) input.click();
     }
 
     function closeCameraViewfinder() {

@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copiar el código fuente
 COPY . /app/
 
+# Crear directorios para archivos multimedia subidos
+RUN mkdir -p /app/media/meal_photos /app/media/food_photos
+
 # Recopilar archivos estáticos para WhiteNoise
 RUN python manage.py collectstatic --noinput
 
