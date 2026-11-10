@@ -645,9 +645,18 @@
 
     async function nextStep() {
         if (currentStep === 3) {
+            const btnNext = document.getElementById('btnNext');
+            const btnBack = document.getElementById('btnBack');
+            btnNext.disabled = true;
+            btnBack.disabled = true;
+            btnNext.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Calculando plan con IA...';
+
             recalculateLocal();
             // Call AI calculation seamlessly
             await computeWithAi();
+
+            btnNext.disabled = false;
+            btnBack.disabled = false;
             currentStep = 4;
             updateStepUI();
             window.scrollTo({ top: 0, behavior: 'smooth' });

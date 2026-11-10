@@ -14,6 +14,7 @@ urlpatterns = [
     path('settings/', views.profile_settings_view, name='profile_settings'),
     path('weight/', views.weight_tracker_view, name='weight_tracker'),
     path('api/foods/search/', views.api_food_search, name='api_food_search'),
+    path('api/meal/quick-add/', views.api_quick_add_meal, name='api_quick_add_meal'),
     path('api/ai/parse-meal/', views.ai_parse_meal_view, name='ai_parse_meal'),
     path('api/ai/estimate-food/', views.ai_estimate_food_view, name='ai_estimate_food'),
     path('api/ai/calculate-deficit/', views.ai_calculate_deficit_view, name='ai_calculate_deficit'),

@@ -1,5 +1,8 @@
 import datetime
+import logging
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
@@ -165,6 +168,15 @@ def dashboard_view(request):
         photo_entry = next((e for e in cat_entries if e.food_item.photo), None)
         photo_url = photo_entry.food_item.photo.url if photo_entry else None
 
+        default_photos = {
+            'desayuno': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=120&auto=format&fit=crop&q=80',
+            'almuerzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80',
+            'merienda': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120&auto=format&fit=crop&q=80',
+            'cena': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=120&auto=format&fit=crop&q=80',
+            'snack': 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=120&auto=format&fit=crop&q=80',
+        }
+        display_photo = photo_url if photo_url else default_photos.get(code, '')
+
         meals_data.append({
             'code': code,
             'label': label,
@@ -174,6 +186,7 @@ def dashboard_view(request):
             'summary': summary,
             'time_str': time_str,
             'photo_url': photo_url,
+            'display_photo': display_photo,
             'subtotal_cal': int(round(subtotal_cal, 0)),
             'subtotal_prot': round(subtotal_prot, 1),
             'subtotal_carbs': round(subtotal_carbs, 1),
@@ -254,6 +267,39 @@ def dashboard_view(request):
         Q(user__isnull=True) | Q(user=request.user)
     ).order_by('-is_favorite', 'name')
 
+    # Frequent foods for the quick-add drawer
+    from django.db.models import Count
+    frequent_food_ids = list(
+        MealEntry.objects.filter(user=request.user)
+        .values('food_item')
+        .annotate(c=Count('food_item'))
+        .order_by('-c')
+        .values_list('food_item', flat=True)[:6]
+    )
+    frequent_foods = list(FoodItem.objects.filter(id__in=frequent_food_ids))
+    if len(frequent_foods) < 3:
+        defaults_to_ensure = [
+            {'name': 'Yogur griego', 'calories': 120, 'protein': 10, 'carbs': 4, 'fat': 5},
+            {'name': 'Banana mediana', 'calories': 105, 'protein': 1.3, 'carbs': 27, 'fat': 0.3},
+            {'name': 'Tostada integral', 'calories': 85, 'protein': 3.5, 'carbs': 14, 'fat': 1.2},
+            {'name': 'Huevo duro', 'calories': 78, 'protein': 6.3, 'carbs': 0.6, 'fat': 5.3},
+        ]
+        for item in defaults_to_ensure:
+            obj, _ = FoodItem.objects.get_or_create(
+                name=item['name'],
+                user=None,
+                defaults={
+                    'calories': Decimal(str(item['calories'])),
+                    'protein': Decimal(str(item['protein'])),
+                    'carbs': Decimal(str(item['carbs'])),
+                    'fat': Decimal(str(item['fat'])),
+                    'serving_size': Decimal('100.0'),
+                    'is_favorite': True
+                }
+            )
+            if obj not in frequent_foods:
+                frequent_foods.append(obj)
+
     context = {
         'selected_date': selected_date,
         'prev_date': prev_date,
@@ -276,6 +322,7 @@ def dashboard_view(request):
         'daily_weight': daily_weight,
         'recent_weights': recent_weights,
         'available_foods': available_foods,
+        'frequent_foods': frequent_foods,
         # Progreso stats
         'start_weight': round(start_weight, 1),
         'current_weight': round(current_weight, 1),
@@ -438,6 +485,68 @@ def api_food_search(request):
 
 
 @login_required
+def api_quick_add_meal(request):
+    """Agrega rápidamente un alimento a una comida del día vía AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    import json
+    try:
+        if request.content_type == 'application/json':
+            body = json.loads(request.body.decode('utf-8'))
+        else:
+            body = request.POST
+
+        food_id = body.get('food_id')
+        name = body.get('name')
+        calories = body.get('calories')
+        meal_type = body.get('meal_type', 'almuerzo')
+        date_str = body.get('date')
+        grams = Decimal(str(body.get('grams', 100)))
+
+        target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+
+        if food_id:
+            food_obj = get_object_or_404(FoodItem, pk=food_id)
+        elif name:
+            food_obj = FoodItem.objects.filter(
+                Q(user=request.user) | Q(user__isnull=True),
+                name__iexact=name.strip()
+            ).first()
+            if not food_obj:
+                cal_val = Decimal(str(calories or 100))
+                food_obj = FoodItem.objects.create(
+                    user=request.user,
+                    name=name.strip(),
+                    calories=cal_val,
+                    protein=Decimal('4.0'),
+                    carbs=Decimal('15.0'),
+                    fat=Decimal('2.0'),
+                    serving_size=Decimal('100.0')
+                )
+        else:
+            return JsonResponse({"error": "Falta información del alimento"}, status=400)
+
+        entry = MealEntry.objects.create(
+            user=request.user,
+            date=target_date,
+            meal_type=meal_type,
+            food_item=food_obj,
+            grams_or_amount=grams
+        )
+
+        return JsonResponse({
+            "success": True,
+            "entry_id": entry.id,
+            "name": food_obj.name,
+            "meal_type": entry.get_meal_type_display(),
+            "calories": float(entry.total_calories)
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+
+@login_required
 def ai_parse_meal_view(request):
     """Analiza una comida en lenguaje natural con Gemini 3.5 Flash Lite y opcionalmente la registra"""
     if request.method != 'POST':
@@ -537,6 +646,17 @@ def ai_parse_meal_view(request):
                         fat=fat_100,
                         is_favorite=False
                     )
+
+                if image_b64 and not food_obj.photo:
+                    try:
+                        from django.core.files.base import ContentFile
+                        import uuid
+                        img_bytes = base64.b64decode(image_b64)
+                        ext = 'png' if 'png' in image_mime_type else 'jpg'
+                        fname = f"meal_{uuid.uuid4().hex[:8]}.{ext}"
+                        food_obj.photo.save(fname, ContentFile(img_bytes), save=True)
+                    except Exception as err:
+                        print("Error saving meal photo:", err)
 
                 # Create the meal entry
                 entry = MealEntry.objects.create(

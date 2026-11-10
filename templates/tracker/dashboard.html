@@ -358,6 +358,94 @@
         padding: 20px;
         margin-bottom: 12px;
     }
+    /* Moment of the day selector pills */
+    .meal-moment-pill, .assistant-moment-pill {
+        border-radius: 999px;
+        padding: 8px 18px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: #ffffff;
+        border: 1px solid rgba(23, 33, 22, 0.14);
+        color: #172116;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .meal-moment-pill.active, .assistant-moment-pill.active {
+        background: #172116 !important;
+        color: #ffffff !important;
+        border-color: #172116 !important;
+    }
+    .btn-quick-add-plus {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e8f8bd;
+        color: #4e7110;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+    .btn-quick-add-plus:active {
+        transform: scale(0.9);
+        background: #b8f34a;
+    }
+    /* Fullscreen camera viewfinder */
+    .nutra-camera-viewfinder {
+        position: fixed;
+        inset: 0;
+        background: #000000;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .camera-top-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 10;
+        background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+    }
+    .camera-bottom-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        z-index: 10;
+        background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+    }
+    .camera-shutter-btn {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: #b8f34a;
+        border: 4px solid #ffffff;
+        box-shadow: 0 0 24px rgba(184, 243, 74, 0.7);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.1s ease;
+    }
+    .camera-shutter-btn:active {
+        transform: scale(0.92);
+    }
 </style>
 {% endblock %}
 
@@ -474,7 +562,7 @@
         <!-- Section: Tus Comidas -->
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.04em; margin: 0; color: #172116;">Tus comidas</h2>
-            <button type="button" class="btn btn-sm fw-bold p-0 text-dark" onclick="openAssistantModal()" style="font-size: 0.9rem;">
+            <button type="button" class="btn btn-sm fw-bold p-0 text-dark" onclick="openQuickAddModal('almuerzo', 'Almuerzo')" style="font-size: 0.9rem;">
                 + Agregar
             </button>
         </div>
@@ -485,10 +573,10 @@
                     <!-- Registered Meal Card -->
                     <div class="meal-card-clean" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
                         <div class="meal-icon-thumb">
-                            {% if meal.photo_url %}
-                                <img src="{{ meal.photo_url }}" alt="{{ meal.label }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% if meal.display_photo %}
+                                <img src="{{ meal.display_photo }}" alt="{{ meal.label }}" style="width: 100%; height: 100%; object-fit: cover;">
                             {% else %}
-                                <i class="fa-regular fa-clock" style="color: #172116; font-size: 1.1rem;"></i>
+                                <i class="fa-solid {{ meal.icon }}" style="color: #172116; font-size: 1.1rem;"></i>
                             {% endif %}
                         </div>
                         <div class="flex-grow-1 overflow-hidden">
@@ -684,7 +772,7 @@
     </button>
 
     <!-- Prominent Center + Button -->
-    <button type="button" class="dock-fab" onclick="openAssistantModal()" title="Registrar con IA">
+    <button type="button" class="dock-fab" onclick="openQuickAddModal('almuerzo', 'Almuerzo')" title="Agregar comida">
         <i class="fa-solid fa-plus"></i>
     </button>
 
@@ -701,10 +789,87 @@
 </div>
 
 <!-- Bottom Sheet Backdrop -->
-<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeAssistantModal()"></div>
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeAllModals()"></div>
 
-<!-- Bottom Sheet Assistant Drawer (Figma Make Exact Match) -->
-<div class="nutra-bottom-sheet" id="assistantSheet">
+<!-- BOTTOM SHEET 1: AGREGAR UNA COMIDA (Figma 100% Exact Match) -->
+<div class="nutra-bottom-sheet" id="quickAddSheet" style="max-height: 90vh; overflow-y: auto;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div style="width: 38px; height: 38px; background: #172116; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ffffff;">
+            <i class="fa-solid fa-plus fs-6"></i>
+        </div>
+        <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeQuickAddModal()">
+            <i class="fa-solid fa-xmark text-dark"></i>
+        </button>
+    </div>
+
+    <h2 style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 16px;">
+        Agregar una comida
+    </h2>
+
+    <!-- Momento del Día -->
+    <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
+        MOMENTO DEL DÍA
+    </div>
+    <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 mb-3" style="scrollbar-width: none;">
+        <button type="button" class="meal-moment-pill" data-meal="desayuno" onclick="selectQuickAddMeal('desayuno')">Desayuno</button>
+        <button type="button" class="meal-moment-pill active" data-meal="almuerzo" onclick="selectQuickAddMeal('almuerzo')">Almuerzo</button>
+        <button type="button" class="meal-moment-pill" data-meal="merienda" onclick="selectQuickAddMeal('merienda')">Merienda</button>
+        <button type="button" class="meal-moment-pill" data-meal="cena" onclick="selectQuickAddMeal('cena')">Cena</button>
+        <button type="button" class="meal-moment-pill" data-meal="snack" onclick="selectQuickAddMeal('snack')">Snack</button>
+    </div>
+
+    <!-- Buscar alimento -->
+    <div style="font-size: 0.85rem; font-weight: 700; color: #6d7b68; margin-bottom: 6px;">
+        Buscar alimento
+    </div>
+    <div class="input-group mb-3">
+        <span class="input-group-text bg-white border-end-0 rounded-start-4 ps-3 text-secondary" style="border-color: rgba(23,33,22,0.18);">
+            <i class="fa-solid fa-plus text-secondary"></i>
+        </span>
+        <input type="text" id="quickFoodSearchInput" class="form-control border-start-0 rounded-end-4 py-2 pe-3 bg-white text-dark" placeholder="Ej: banana, yogur, pollo..." style="border-color: rgba(23,33,22,0.18); font-size: 0.92rem;" oninput="handleQuickFoodSearch(event)">
+    </div>
+
+    <!-- Live Search Results Container -->
+    <div id="quickSearchResults" class="d-none mb-3"></div>
+
+    <!-- Agregados frecuentes -->
+    <div id="frequentSection">
+        <div style="font-size: 0.82rem; font-weight: 700; color: #879482; margin-bottom: 10px;">
+            Agregados frecuentes
+        </div>
+        <div class="d-flex flex-column gap-2 mb-3">
+            {% for food in frequent_foods %}
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+                    <div>
+                        <strong style="font-size: 0.95rem; color: #172116; display: block;">{{ food.name }}</strong>
+                        <span style="font-size: 0.8rem; color: #879482; font-weight: 600;">{{ food.calories|floatformat:0 }} kcal</span>
+                    </div>
+                    <button type="button" class="btn-quick-add-plus" onclick="submitQuickFood({{ food.id }}, '{{ food.name|escapejs }}', {{ food.calories }})" title="Añadir {{ food.name }}">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Botón Agregar Alimento -->
+    <button type="button" id="btnCustomFoodAdd" class="btn w-100 py-3 rounded-4 fw-bold mb-3" style="background: #8b9485; color: #ffffff; font-size: 0.95rem;" onclick="handleCustomFoodSubmit()">
+        + Agregar alimento
+    </button>
+
+    <!-- Link Registrar con IA -->
+    <div class="text-center pt-1 mb-2">
+        <button type="button" class="btn btn-link text-decoration-none fw-bold p-0" style="color: #4a6823; font-size: 0.92rem;" onclick="switchToAssistantFromQuickAdd()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#4a6823" class="me-1" style="vertical-align: -2px;">
+                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+            </svg>
+            Prefiero registrarlo con IA
+        </button>
+    </div>
+</div>
+
+<!-- BOTTOM SHEET 2: ASISTENTE IA (¿Cómo querés registrarlo?) -->
+<div class="nutra-bottom-sheet" id="assistantSheet" style="max-height: 90vh; overflow-y: auto;">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="nutra-logo-box">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
@@ -716,21 +881,33 @@
         </button>
     </div>
 
-    <h2 style="font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 20px;">
+    <h2 style="font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 14px;">
         ¿Cómo querés registrarlo?
     </h2>
 
-    <!-- Hidden native file input for camera -->
+    <!-- Momento del Día en Asistente IA -->
+    <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
+        MOMENTO DEL DÍA
+    </div>
+    <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 mb-3" style="scrollbar-width: none;">
+        <button type="button" class="assistant-moment-pill" data-meal="desayuno" onclick="selectAssistantMeal('desayuno')">Desayuno</button>
+        <button type="button" class="assistant-moment-pill active" data-meal="almuerzo" onclick="selectAssistantMeal('almuerzo')">Almuerzo</button>
+        <button type="button" class="assistant-moment-pill" data-meal="merienda" onclick="selectAssistantMeal('merienda')">Merienda</button>
+        <button type="button" class="assistant-moment-pill" data-meal="cena" onclick="selectAssistantMeal('cena')">Cena</button>
+        <button type="button" class="assistant-moment-pill" data-meal="snack" onclick="selectAssistantMeal('snack')">Snack</button>
+    </div>
+
+    <!-- Hidden native file input for camera/gallery fallback -->
     <input type="file" id="nutraCameraInput" accept="image/*" capture="environment" class="d-none" onchange="handleNutraPhotoSelected(event)">
 
-    <!-- Option 1: Sacar Foto -->
+    <!-- Option 1: Sacar Foto (Direct In-App Camera) -->
     <button type="button" class="assistant-card-btn" onclick="triggerNutraCamera()">
         <div class="assistant-icon-box">
             <i class="fa-solid fa-camera"></i>
         </div>
         <div>
             <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Sacar foto</strong>
-            <small style="color: #879482; font-size: 0.8rem;">La IA reconoce el plato</small>
+            <small style="color: #879482; font-size: 0.8rem;">La cámara enfoca y la IA reconoce el plato</small>
         </div>
     </button>
 
@@ -760,7 +937,7 @@
 
     <!-- Inline Assistant Input / Loading area -->
     <div id="nutraAiActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: rgba(23,33,22,0.03); border: 1px solid rgba(23,33,22,0.08);">
-        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-2 p-2 rounded-3" style="background: #ffffff;">
+        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-2 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
             <img id="nutraPhotoImg" src="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
             <div class="flex-grow-1 overflow-hidden" style="font-size: 0.8rem;">
                 <strong id="nutraPhotoName" class="d-block text-truncate text-dark">Foto del plato</strong>
@@ -779,6 +956,34 @@
             <div class="spinner-border spinner-border-sm me-2"></div>
             <span>Gemini IA calculando porciones y calorías...</span>
         </div>
+    </div>
+</div>
+
+<!-- IN-APP LIVE CAMERA VIEWFINDER MODAL -->
+<div id="cameraViewfinderModal" class="nutra-camera-viewfinder d-none">
+    <div class="camera-top-bar">
+        <button type="button" class="btn btn-dark rounded-circle p-2" onclick="closeCameraViewfinder()" style="width: 42px; height: 42px; background: rgba(0,0,0,0.55); border: none;">
+            <i class="fa-solid fa-xmark text-white fs-5"></i>
+        </button>
+        <span class="text-white fw-bold small">Enfocá tu plato</span>
+        <button type="button" class="btn btn-dark rounded-circle p-2" onclick="flipCamera()" style="width: 42px; height: 42px; background: rgba(0,0,0,0.55); border: none;">
+            <i class="fa-solid fa-camera-rotate text-white"></i>
+        </button>
+    </div>
+
+    <div style="width: 100%; height: 100%; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000000;">
+        <video id="cameraLiveVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+        <canvas id="cameraCanvas" class="d-none"></canvas>
+    </div>
+
+    <div class="camera-bottom-bar">
+        <button type="button" class="btn text-white small p-0 text-center" onclick="fallbackToFilePicker()" style="font-size: 0.78rem; width: 60px;">
+            <i class="fa-regular fa-image fs-4 d-block mb-1"></i>Galería
+        </button>
+        <button type="button" class="camera-shutter-btn" onclick="captureCameraPhoto()" title="Tomar foto">
+            <div style="width: 58px; height: 58px; border-radius: 50%; background: #ffffff;"></div>
+        </button>
+        <div style="width: 60px;"></div>
     </div>
 </div>
 
@@ -810,6 +1015,7 @@
 </div>
 
 <script>
+    // Tab Switching
     function switchNutraTab(tab) {
         const viewToday = document.getElementById('viewToday');
         const viewProgress = document.getElementById('viewProgress');
@@ -832,7 +1038,48 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function openAssistantModal() {
+    // Modal Management
+    let activeQuickMealType = 'almuerzo';
+    let activeAssistantMealType = 'almuerzo';
+
+    function closeAllModals() {
+        document.getElementById('sheetBackdrop').classList.remove('open');
+        document.getElementById('quickAddSheet').classList.remove('open');
+        document.getElementById('assistantSheet').classList.remove('open');
+    }
+
+    function openQuickAddModal(mealCode, mealLabel) {
+        closeAllModals();
+        if (mealCode) {
+            selectQuickAddMeal(mealCode);
+        }
+        document.getElementById('sheetBackdrop').classList.add('open');
+        document.getElementById('quickAddSheet').classList.add('open');
+    }
+
+    function closeQuickAddModal() {
+        document.getElementById('sheetBackdrop').classList.remove('open');
+        document.getElementById('quickAddSheet').classList.remove('open');
+    }
+
+    function selectQuickAddMeal(mealCode) {
+        activeQuickMealType = mealCode;
+        document.querySelectorAll('.meal-moment-pill').forEach(pill => {
+            if (pill.dataset.meal === mealCode) {
+                pill.classList.add('active');
+            } else {
+                pill.classList.remove('active');
+            }
+        });
+    }
+
+    function openAssistantModal(mealCode) {
+        closeAllModals();
+        if (mealCode) {
+            selectAssistantMeal(mealCode);
+        } else {
+            selectAssistantMeal(activeQuickMealType || 'almuerzo');
+        }
         document.getElementById('sheetBackdrop').classList.add('open');
         document.getElementById('assistantSheet').classList.add('open');
     }
@@ -842,16 +1089,191 @@
         document.getElementById('assistantSheet').classList.remove('open');
     }
 
+    function selectAssistantMeal(mealCode) {
+        activeAssistantMealType = mealCode;
+        document.querySelectorAll('.assistant-moment-pill').forEach(pill => {
+            if (pill.dataset.meal === mealCode) {
+                pill.classList.add('active');
+            } else {
+                pill.classList.remove('active');
+            }
+        });
+    }
+
+    function switchToAssistantFromQuickAdd() {
+        closeQuickAddModal();
+        openAssistantModal(activeQuickMealType);
+    }
+
     function openWeightModal() {
         const m = new bootstrap.Modal(document.getElementById('weightModal'));
         m.show();
     }
 
-    // Camera Support
-    let nutraPhotoB64 = null;
-    let nutraPhotoMime = null;
+    // Quick Add Food Actions
+    async function submitQuickFood(foodId, name, calories, grams = 100) {
+        try {
+            const resp = await fetch('{% url "api_quick_add_meal" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    food_id: foodId,
+                    name: name,
+                    calories: calories,
+                    meal_type: activeQuickMealType,
+                    date: '{{ selected_date|date:"Y-m-d" }}',
+                    grams: grams
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error al registrar comida: ' + (data.error || 'Intente nuevamente'));
+            }
+        } catch (e) {
+            alert('Error de conexión: ' + e);
+        }
+    }
 
-    function triggerNutraCamera() {
+    let searchTimeout = null;
+    function handleQuickFoodSearch(e) {
+        const query = e.target.value.trim();
+        const resultsBox = document.getElementById('quickSearchResults');
+        const frequentBox = document.getElementById('frequentSection');
+
+        clearTimeout(searchTimeout);
+        if (!query) {
+            resultsBox.classList.add('d-none');
+            resultsBox.innerHTML = '';
+            frequentBox.classList.remove('d-none');
+            document.getElementById('btnCustomFoodAdd').innerText = '+ Agregar alimento';
+            return;
+        }
+
+        document.getElementById('btnCustomFoodAdd').innerText = `+ Agregar "${query}"`;
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const resp = await fetch(`{% url "api_food_search" %}?q=${encodeURIComponent(query)}`);
+                const data = await resp.json();
+                if (data.results && data.results.length > 0) {
+                    let html = '<div class="d-flex flex-column gap-2">';
+                    data.results.slice(0, 5).forEach(f => {
+                        html += `
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+                                <div>
+                                    <strong style="font-size: 0.95rem; color: #172116; display: block;">${f.name}</strong>
+                                    <span style="font-size: 0.8rem; color: #879482; font-weight: 600;">${Math.round(f.calories)} kcal / 100g</span>
+                                </div>
+                                <button type="button" class="btn-quick-add-plus" onclick="submitQuickFood(${f.id}, '${f.name.replace(/'/g, "\\'")}', ${f.calories})">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    resultsBox.innerHTML = html;
+                    resultsBox.classList.remove('d-none');
+                    frequentBox.classList.add('d-none');
+                } else {
+                    resultsBox.innerHTML = `<div class="p-3 text-center text-muted small rounded-4" style="background: rgba(23,33,22,0.03);">No se encontraron alimentos en catálogo. Tocá "+ Agregar" para guardarlo nuevo.</div>`;
+                    resultsBox.classList.remove('d-none');
+                    frequentBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }, 250);
+    }
+
+    function handleCustomFoodSubmit() {
+        const input = document.getElementById('quickFoodSearchInput');
+        const val = input ? input.value.trim() : '';
+        if (val) {
+            submitQuickFood(null, val, 150);
+        } else {
+            input.focus();
+        }
+    }
+
+    // Direct In-App Live Camera Viewfinder (WebRTC getUserMedia)
+    let cameraStream = null;
+    let cameraFacingMode = 'environment';
+    let nutraPhotoB64 = null;
+    let nutraPhotoMime = 'image/jpeg';
+
+    async function triggerNutraCamera() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: cameraFacingMode },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+                cameraStream = stream;
+                const video = document.getElementById('cameraLiveVideo');
+                video.srcObject = stream;
+                await video.play();
+                document.getElementById('cameraViewfinderModal').classList.remove('d-none');
+                return;
+            } catch (err) {
+                console.warn('getUserMedia falló o fue denegado, abriendo selector de archivos/cámara nativo', err);
+            }
+        }
+        // Fallback to native capture file input
+        fallbackToFilePicker();
+    }
+
+    function closeCameraViewfinder() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+        }
+        document.getElementById('cameraViewfinderModal').classList.add('d-none');
+    }
+
+    async function flipCamera() {
+        cameraFacingMode = (cameraFacingMode === 'environment') ? 'user' : 'environment';
+        closeCameraViewfinder();
+        await triggerNutraCamera();
+    }
+
+    function captureCameraPhoto() {
+        const video = document.getElementById('cameraLiveVideo');
+        const canvas = document.getElementById('cameraCanvas');
+        if (!video || !canvas) return;
+
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const parts = dataUrl.split(',');
+        nutraPhotoMime = 'image/jpeg';
+        nutraPhotoB64 = parts[1];
+
+        closeCameraViewfinder();
+
+        // Show captured image preview inside Assistant Drawer
+        document.getElementById('nutraPhotoImg').src = dataUrl;
+        document.getElementById('nutraPhotoName').innerText = 'Foto de cámara (' + activeAssistantMealType.toUpperCase() + ')';
+        document.getElementById('nutraPhotoPreviewBox').classList.remove('d-none');
+        document.getElementById('nutraPhotoPreviewBox').classList.add('d-flex');
+        showNutraTextInput();
+        document.getElementById('nutraAiInput').placeholder = 'Agrega detalles opcionales o presiona Analizar...';
+        document.getElementById('nutraAiInput').focus();
+    }
+
+    function fallbackToFilePicker() {
+        closeCameraViewfinder();
         const input = document.getElementById('nutraCameraInput');
         if (input) input.click();
     }
@@ -891,7 +1313,7 @@
         document.getElementById('nutraAiInput').focus();
     }
 
-    // Speech Audio
+    // Audio Speech Recognition
     let nutraSpeechRec = null;
     let isNutraRecording = false;
 
@@ -964,7 +1386,7 @@
                     text: text,
                     image_b64: nutraPhotoB64,
                     image_mime_type: nutraPhotoMime,
-                    meal_type: 'almuerzo',
+                    meal_type: activeAssistantMealType,
                     auto_save: true
                 })
             });

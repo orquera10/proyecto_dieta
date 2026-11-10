@@ -118,6 +118,7 @@ class FoodItem(models.Model):
         verbose_name="Grasas (g)"
     )
     is_favorite = models.BooleanField(default=False, verbose_name="Favorito")
+    photo = models.ImageField(upload_to='food_photos/', blank=True, null=True, verbose_name="Foto del alimento")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
