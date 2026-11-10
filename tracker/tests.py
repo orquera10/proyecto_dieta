@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -63,6 +64,25 @@ class DeficitTrackerTestCase(TestCase):
         self.assertTrue(data['success'])
         self.assertTrue(data['saved'])
         self.assertGreater(data['count'], 0)
+
+    def test_ai_parse_endpoint_with_image_and_text(self):
+        import base64
+        self.client.login(username='dario_test', password='TestPassword123')
+        # Tiny 1x1 transparent PNG in base64
+        tiny_png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        response = self.client.post(
+            reverse('ai_parse_meal'),
+            data=json.dumps({
+                'text': 'Plato de almuerzo saludable',
+                'image_b64': tiny_png,
+                'image_mime_type': 'image/png',
+                'auto_save': True
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
 
     def test_ai_estimate_food_endpoint(self):
         self.client.login(username='dario_test', password='TestPassword123')

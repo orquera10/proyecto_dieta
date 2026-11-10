@@ -65,13 +65,29 @@
                 </div>
 
                 <div class="input-group mb-2 shadow-sm">
-                    <input type="text" id="aiMealInput" class="form-control form-control-lg fs-6" placeholder="Ej: como 3 albóndigas con una porción de puré..." onkeydown="if(event.key === 'Enter') submitAiMeal()">
+                    <input type="file" id="aiMealPhotoInput" accept="image/*" capture="environment" class="d-none" onchange="handleAiMealPhotoSelect(event)">
+                    <button type="button" id="btnPhotoInput" class="btn btn-outline-secondary px-3" onclick="document.getElementById('aiMealPhotoInput').click()" title="Sacar foto o subir imagen del plato">
+                        <i class="fa-solid fa-camera text-warning fs-5"></i>
+                    </button>
+                    <input type="text" id="aiMealInput" class="form-control form-control-lg fs-6" placeholder="Escribe tu comida o saca una foto del plato..." onkeydown="if(event.key === 'Enter') submitAiMeal()">
                     <button type="button" id="btnVoiceInput" class="btn btn-outline-secondary px-3" onclick="toggleVoiceInput()" title="Dictar por voz" style="display: none;">
                         <i class="fa-solid fa-microphone text-info fs-5"></i>
                     </button>
                     <button type="button" id="btnAiSubmit" class="btn btn-primary d-flex align-items-center gap-2 px-4 fw-bold" onclick="submitAiMeal()">
                         <i class="fa-solid fa-paper-plane"></i>
                         <span class="d-none d-sm-inline">Registrar</span>
+                    </button>
+                </div>
+
+                <!-- Preview de Foto Adjunta -->
+                <div id="aiPhotoPreviewBox" class="d-none align-items-center gap-2 p-2 mb-2 rounded-3 animate-fade-in" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.4);">
+                    <img id="aiPhotoPreviewImg" src="" alt="Foto comida" class="rounded-2 shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+                    <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
+                        <div class="fw-bold text-light text-truncate small" id="aiPhotoFileName">Foto seleccionada</div>
+                        <span class="text-info" style="font-size: 0.73rem;"><i class="fa-solid fa-eye me-1"></i>Gemini 3.5 Flash Lite analizará la foto con tu texto</span>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-circle" onclick="removeAiMealPhoto()" title="Eliminar foto">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
@@ -215,8 +231,9 @@
                         <span class="badge rounded-pill px-3 py-2 text-light num-font" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);">
                             {{ meal.subtotal_cal }} <span class="text-secondary" style="font-size: 0.7rem;">kcal</span>
                         </span>
-                        <button class="btn btn-sm btn-outline-success px-2 py-1 rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')" title="Añadir alimento">
-                            <i class="fa-solid fa-plus"></i>
+                        <button class="btn btn-success d-flex align-items-center justify-content-center gap-1 px-3 py-2 rounded-pill shadow" style="min-height: 44px; min-width: 44px; border: 1px solid rgba(16, 185, 129, 0.6); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')" title="Añadir alimento a {{ meal.label }}">
+                            <i class="fa-solid fa-plus fs-4 fw-bold"></i>
+                            <span class="fw-bold small d-none d-sm-inline">Añadir</span>
                         </button>
                     </div>
                 </div>
@@ -298,9 +315,9 @@
 
                     {% else %}
                     <div class="p-3 text-center text-secondary small">
-                        <i class="fa-solid fa-utensils me-1 opacity-50"></i> Sin alimentos registrados.
-                        <button class="btn btn-link btn-sm text-info text-decoration-none p-0 ms-1 fw-bold" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
-                            + Añadir
+                        <div class="mb-2"><i class="fa-solid fa-utensils me-1 opacity-50"></i> Sin alimentos registrados en {{ meal.label|lower }}.</div>
+                        <button class="btn btn-outline-success btn-sm px-3 py-1 rounded-pill fw-bold" onclick="openQuickAddModal('{{ meal.code }}', '{{ meal.label }}')">
+                            <i class="fa-solid fa-plus me-1 fs-6"></i> Añadir alimento
                         </button>
                     </div>
                     {% endif %}
@@ -433,12 +450,30 @@
                 <div class="tab-pane fade" id="tab-ai" role="tabpanel">
                     <div class="modal-body p-3">
                         <div class="mb-3">
-                            <label for="modalAiInput" class="form-label text-secondary small fw-bold mb-1">Escribe lo que comiste en lenguaje natural:</label>
-                            <textarea id="modalAiInput" rows="3" class="form-control" placeholder="Ej: comí 3 albóndigas con una porción de puré de papas y una manzana"></textarea>
+                            <label for="modalAiInput" class="form-label text-secondary small fw-bold mb-1">Escribe lo que comiste o sube una foto:</label>
+                            <div class="input-group mb-2">
+                                <input type="file" id="modalAiPhotoInput" accept="image/*" capture="environment" class="d-none" onchange="handleModalAiPhotoSelect(event)">
+                                <button type="button" id="btnModalPhoto" class="btn btn-outline-secondary px-3" onclick="document.getElementById('modalAiPhotoInput').click()" title="Tomar foto del plato">
+                                    <i class="fa-solid fa-camera text-warning fs-5"></i>
+                                </button>
+                                <textarea id="modalAiInput" rows="2" class="form-control" placeholder="Ej: 3 albóndigas con una porción de puré..."></textarea>
+                            </div>
+
+                            <!-- Preview Foto en Modal -->
+                            <div id="modalPhotoPreviewBox" class="d-none align-items-center gap-2 p-2 mb-2 rounded-3 animate-fade-in" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.4);">
+                                <img id="modalPhotoPreviewImg" src="" alt="Foto comida" class="rounded-2 shadow-sm" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+                                <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
+                                    <div class="fw-bold text-light text-truncate small" id="modalPhotoFileName">Foto seleccionada</div>
+                                    <span class="text-info" style="font-size: 0.73rem;">Gemini analizará la imagen junto con tus notas</span>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-circle" onclick="removeModalAiPhoto()" title="Eliminar foto">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="p-2 rounded bg-black bg-opacity-25 border border-secondary border-opacity-25 small text-secondary mb-3">
                             <i class="fa-solid fa-sparkles text-info me-1"></i>
-                            Gemini 3.5 Flash Lite calculará los alimentos, porciones estimadas en gramos, calorías y macronutrientes, y los guardará en tu diario automáticamente.
+                            Gemini 3.5 Flash Lite estimará porción, calorías y macros basándose en la imagen y texto, guardándolo en este momento del día.
                         </div>
                         <div id="modalAiSpinner" class="text-center text-info small d-none mb-3">
                             <div class="spinner-border spinner-border-sm me-2"></div>
@@ -530,6 +565,117 @@
         }
     }
 
+    let currentAiMealPhoto = null;
+    let currentModalAiPhoto = null;
+
+    function handleAiMealPhotoSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert("La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.");
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const fullData = e.target.result;
+            const parts = fullData.split(',');
+            const mime = parts[0].split(':')[1].split(';')[0];
+            const b64 = parts[1];
+
+            currentAiMealPhoto = { b64: b64, mime: mime };
+
+            const box = document.getElementById('aiPhotoPreviewBox');
+            const img = document.getElementById('aiPhotoPreviewImg');
+            const name = document.getElementById('aiPhotoFileName');
+            if (box && img) {
+                img.src = fullData;
+                if (name) name.innerText = file.name || "Foto del plato";
+                box.classList.remove('d-none');
+                box.classList.add('d-flex');
+            }
+
+            const btn = document.getElementById('btnPhotoInput');
+            if (btn) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-warning', 'text-dark');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeAiMealPhoto() {
+        currentAiMealPhoto = null;
+        const fileInput = document.getElementById('aiMealPhotoInput');
+        if (fileInput) fileInput.value = '';
+        const box = document.getElementById('aiPhotoPreviewBox');
+        if (box) {
+            box.classList.add('d-none');
+            box.classList.remove('d-flex');
+        }
+        const btn = document.getElementById('btnPhotoInput');
+        if (btn) {
+            btn.classList.add('btn-outline-secondary');
+            btn.classList.remove('btn-warning', 'text-dark');
+        }
+    }
+
+    function handleModalAiPhotoSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert("La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.");
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const fullData = e.target.result;
+            const parts = fullData.split(',');
+            const mime = parts[0].split(':')[1].split(';')[0];
+            const b64 = parts[1];
+
+            currentModalAiPhoto = { b64: b64, mime: mime };
+
+            const box = document.getElementById('modalPhotoPreviewBox');
+            const img = document.getElementById('modalPhotoPreviewImg');
+            const name = document.getElementById('modalPhotoFileName');
+            if (box && img) {
+                img.src = fullData;
+                if (name) name.innerText = file.name || "Foto del plato";
+                box.classList.remove('d-none');
+                box.classList.add('d-flex');
+            }
+
+            const btn = document.getElementById('btnModalPhoto');
+            if (btn) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-warning', 'text-dark');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeModalAiPhoto() {
+        currentModalAiPhoto = null;
+        const fileInput = document.getElementById('modalAiPhotoInput');
+        if (fileInput) fileInput.value = '';
+        const box = document.getElementById('modalPhotoPreviewBox');
+        if (box) {
+            box.classList.add('d-none');
+            box.classList.remove('d-flex');
+        }
+        const btn = document.getElementById('btnModalPhoto');
+        if (btn) {
+            btn.classList.add('btn-outline-secondary');
+            btn.classList.remove('btn-warning', 'text-dark');
+        }
+    }
+
     // Submit meal to Gemini 3.5 Flash Lite API
     async function submitAiMeal() {
         const input = document.getElementById('aiMealInput');
@@ -538,8 +684,8 @@
         const spinner = document.getElementById('aiLoadingIndicator');
         const submitBtn = document.getElementById('btnAiSubmit');
 
-        if (!text) {
-            alert('Por favor escribe lo que comiste antes de enviar.');
+        if (!text && !currentAiMealPhoto) {
+            alert('Por favor escribe lo que comiste o toma una foto para que Gemini la analice.');
             input.focus();
             return;
         }
@@ -556,6 +702,8 @@
                 },
                 body: JSON.stringify({
                     text: text,
+                    image_b64: currentAiMealPhoto ? currentAiMealPhoto.b64 : null,
+                    image_mime_type: currentAiMealPhoto ? currentAiMealPhoto.mime : null,
                     date: date,
                     meal_type: 'almuerzo',
                     auto_save: true
@@ -585,8 +733,8 @@
         const mealType = document.getElementById('modalMealType').value || 'almuerzo';
         const spinner = document.getElementById('modalAiSpinner');
 
-        if (!text) {
-            alert('Por favor escribe tu comida.');
+        if (!text && !currentModalAiPhoto) {
+            alert('Por favor escribe tu comida o saca una foto.');
             input.focus();
             return;
         }
@@ -602,6 +750,13 @@
                 },
                 body: JSON.stringify({
                     text: text,
+                    image_b64: currentModalAiPhoto ? currentModalAiPhoto.b64 : null,
+                    image_mime_type: currentModalAiPhoto ? currentModalAiPhoto.mime : null,
+                    date: date,
+                    meal_type: mealType,
+                    auto_save: true
+                })
+            });
                     date: date,
                     meal_type: mealType,
                     auto_save: true

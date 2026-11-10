@@ -302,8 +302,30 @@ def ai_parse_meal_view(request):
         default_meal_type = body.get('meal_type', 'almuerzo')
         auto_save = body.get('auto_save', True)
 
-        if not text:
-            return JsonResponse({"error": "Por favor escribe lo que comiste para que la IA lo analice."}, status=400)
+        import base64
+        image_b64 = None
+        image_mime_type = "image/jpeg"
+
+        # Check for uploaded file in multipart request or base64 string in JSON
+        if 'image' in request.FILES:
+            uploaded_file = request.FILES['image']
+            image_b64 = base64.b64encode(uploaded_file.read()).decode('utf-8')
+            image_mime_type = uploaded_file.content_type or 'image/jpeg'
+        elif body.get('image_b64'):
+            raw_b64 = body.get('image_b64')
+            if ',' in raw_b64 and 'base64' in raw_b64:
+                # Handle data:image/png;base64,xxxx
+                header, data_part = raw_b64.split(',', 1)
+                image_b64 = data_part
+                if 'image/' in header:
+                    image_mime_type = header.split(';')[0].split(':')[1]
+            else:
+                image_b64 = raw_b64
+            if body.get('image_mime_type'):
+                image_mime_type = body.get('image_mime_type')
+
+        if not text and not image_b64:
+            return JsonResponse({"error": "Por favor escribe lo que comiste o sube una foto del plato para que la IA lo analice."}, status=400)
 
         # Parse date
         if date_str:
@@ -314,8 +336,13 @@ def ai_parse_meal_view(request):
         else:
             target_date = timezone.localdate()
 
-        # Call Gemini service
-        res = parse_meal_with_gemini(text, default_meal_type=default_meal_type)
+        # Call Gemini service with multimodal vision support
+        res = parse_meal_with_gemini(
+            user_text=text,
+            image_b64=image_b64,
+            image_mime_type=image_mime_type,
+            default_meal_type=default_meal_type
+        )
         if "error" in res:
             return JsonResponse({"error": res["error"]}, status=500)
 

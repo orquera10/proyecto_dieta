@@ -12,10 +12,11 @@ PRIMARY_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash-lite')
 FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-flash-latest']
 
 
-def call_gemini_api(prompt, system_instruction=None, temperature=0.2):
+def call_gemini_api(prompt=None, parts=None, system_instruction=None, temperature=0.2):
     """
     Realiza una llamada robusta a la API de Gemini (Google AI Studio)
-    con respuesta estructurada JSON, reintentos y modelo de respaldo si hay alta demanda (503).
+    con respuesta estructurada JSON, soporte multimodal (texto e imágenes),
+    reintentos y modelo de respaldo si hay alta demanda (503).
     """
     api_key = os.environ.get('GEMINI_API_KEY', '')
     if not api_key:
@@ -23,8 +24,11 @@ def call_gemini_api(prompt, system_instruction=None, temperature=0.2):
 
     models_to_try = [os.environ.get('GEMINI_MODEL', PRIMARY_MODEL)] + FALLBACK_MODELS
 
+    if parts is None:
+        parts = [{"text": prompt or ""}]
+
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
+        "contents": [{"parts": parts}],
         "generationConfig": {
             "responseMimeType": "application/json",
             "temperature": temperature
@@ -48,7 +52,7 @@ def call_gemini_api(prompt, system_instruction=None, temperature=0.2):
                     data=json.dumps(payload).encode('utf-8'),
                     headers={'Content-Type': 'application/json'}
                 )
-                with urllib.request.urlopen(req, timeout=15) as response:
+                with urllib.request.urlopen(req, timeout=20) as response:
                     res_data = json.loads(response.read().decode('utf-8'))
                     candidates = res_data.get('candidates', [])
                     if not candidates:
@@ -75,16 +79,19 @@ def call_gemini_api(prompt, system_instruction=None, temperature=0.2):
     return {"error": f"Error comunicando con Gemini: {last_error}"}
 
 
-def parse_meal_with_gemini(user_text, default_meal_type='almuerzo'):
+def parse_meal_with_gemini(user_text="", image_b64=None, image_mime_type="image/jpeg", default_meal_type='almuerzo'):
     """
-    Analiza una descripción de comida en lenguaje natural (ej: '3 albondigas con pure')
+    Analiza una descripción de comida en lenguaje natural y/o una imagen del plato
     utilizando Gemini 3.5 Flash Lite y devuelve la lista de alimentos con sus macros calculados.
     """
     system_instruction = (
-        "Eres un nutricionista experto y calculadora calórica precisa. "
-        "El usuario describirá lo que comió en lenguaje cotidiano (español), "
-        "por ejemplo: 'como 3 albóndigas con una porción de puré' o 'un café con leche y 2 tostadas con palta'. "
-        "Tu tarea es desglosar los alimentos individuales en porciones realistas y estimar sus valores nutricionales. "
+        "Eres un nutricionista experto y calculadora calórica precisa de referencia mundial con visión computacional. "
+        "El usuario te proporcionará una fotografía de su comida, una descripción en texto, o ambas cosas combinadas. "
+        "Tu tarea es: "
+        "1. Si hay una imagen, analiza minuciosamente los alimentos que componen el plato o la comida visible. "
+        "2. Usa cualquier texto o aclaración que el usuario proporcione para afinar detalles de preparación (ej: si es frito o al horno, si lleva manteca, tipo de queso, etc.). "
+        "3. Desglosa los alimentos individuales en porciones realistas (estimando peso en gramos o mililitros según el tamaño visual). "
+        "4. Calcula con precisión las calorías totales y macronutrientes (proteínas, carbohidratos y grasas en gramos) para cada alimento. "
         f"Si el usuario no especifica el momento del día, asume '{default_meal_type}'. "
         "Los tipos de comida permitidos son: 'desayuno', 'almuerzo', 'merienda', 'cena', 'snack'. "
         "Debes responder EXCLUSIVAMENTE con un JSON que sea un array de objetos con las siguientes claves: "
@@ -97,9 +104,25 @@ def parse_meal_with_gemini(user_text, default_meal_type='almuerzo'):
         "- meal_type: string (uno de: 'desayuno', 'almuerzo', 'merienda', 'cena', 'snack')"
     )
 
-    prompt = f"Comida consumida por el usuario:\n\"{user_text}\""
+    parts = []
 
-    res = call_gemini_api(prompt, system_instruction=system_instruction)
+    if image_b64:
+        parts.append({
+            "inline_data": {
+                "mime_type": image_mime_type or "image/jpeg",
+                "data": image_b64
+            }
+        })
+
+    prompt_text = "Comida del usuario a analizar:"
+    if user_text:
+        prompt_text += f"\nDescripción y detalles adicionales del usuario: \"{user_text}\""
+    if image_b64:
+        prompt_text += "\nPor favor analiza la fotografía del plato adjunto e identifica todos los alimentos y cantidades."
+
+    parts.append({"text": prompt_text})
+
+    res = call_gemini_api(parts=parts, system_instruction=system_instruction)
     if "error" in res:
         return res
 

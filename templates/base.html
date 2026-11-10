@@ -629,9 +629,25 @@
                             </div>
 
                             <div class="input-group mb-2">
-                                <textarea id="globalAiInput" rows="2" class="form-control" placeholder="Ej: como 3 albóndigas con una porción de puré..."></textarea>
+                                <input type="file" id="globalAiPhotoInput" accept="image/*" capture="environment" class="d-none" onchange="handleGlobalAiPhotoSelect(event)">
+                                <button type="button" id="btnGlobalPhoto" class="btn btn-outline-secondary px-3" onclick="document.getElementById('globalAiPhotoInput').click()" title="Sacar foto del plato">
+                                    <i class="fa-solid fa-camera text-warning fs-5"></i>
+                                </button>
+                                <textarea id="globalAiInput" rows="2" class="form-control" placeholder="Escribe lo que comiste o toma una foto del plato..."></textarea>
                                 <button type="button" id="btnGlobalVoice" class="btn btn-outline-secondary px-3" onclick="toggleGlobalVoice()" title="Dictar por voz" style="display: none;">
                                     <i class="fa-solid fa-microphone text-info"></i>
+                                </button>
+                            </div>
+
+                            <!-- Preview Foto en Modal Global -->
+                            <div id="globalPhotoPreviewBox" class="d-none align-items-center gap-2 p-2 mb-2 rounded-3 animate-fade-in" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.4);">
+                                <img id="globalPhotoPreviewImg" src="" alt="Foto comida" class="rounded-2 shadow-sm" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+                                <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
+                                    <div class="fw-bold text-light text-truncate small" id="globalPhotoFileName">Foto seleccionada</div>
+                                    <span class="text-info" style="font-size: 0.73rem;">Gemini analizará la imagen junto con tus notas</span>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-circle" onclick="removeGlobalAiPhoto()" title="Eliminar foto">
+                                    <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
 
@@ -840,6 +856,62 @@
             try { globalSpeechRec?.stop(); } catch(e) {}
         }
 
+        let currentGlobalAiPhoto = null;
+
+        function handleGlobalAiPhotoSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) {
+                alert("La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.");
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fullData = e.target.result;
+                const parts = fullData.split(',');
+                const mime = parts[0].split(':')[1].split(';')[0];
+                const b64 = parts[1];
+
+                currentGlobalAiPhoto = { b64: b64, mime: mime };
+
+                const box = document.getElementById('globalPhotoPreviewBox');
+                const img = document.getElementById('globalPhotoPreviewImg');
+                const name = document.getElementById('globalPhotoFileName');
+                if (box && img) {
+                    img.src = fullData;
+                    if (name) name.innerText = file.name || "Foto del plato";
+                    box.classList.remove('d-none');
+                    box.classList.add('d-flex');
+                }
+
+                const btn = document.getElementById('btnGlobalPhoto');
+                if (btn) {
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-warning', 'text-dark');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeGlobalAiPhoto() {
+            currentGlobalAiPhoto = null;
+            const fileInput = document.getElementById('globalAiPhotoInput');
+            if (fileInput) fileInput.value = '';
+            const box = document.getElementById('globalPhotoPreviewBox');
+            if (box) {
+                box.classList.add('d-none');
+                box.classList.remove('d-flex');
+            }
+            const btn = document.getElementById('btnGlobalPhoto');
+            if (btn) {
+                btn.classList.add('btn-outline-secondary');
+                btn.classList.remove('btn-warning', 'text-dark');
+            }
+        }
+
         async function submitGlobalAiMeal() {
             const input = document.getElementById('globalAiInput');
             const text = input ? input.value.trim() : '';
@@ -848,8 +920,8 @@
             const spinner = document.getElementById('globalAiSpinner');
             const btn = document.getElementById('btnSubmitGlobalAi');
 
-            if (!text) {
-                alert('Por favor escribe lo que comiste para que la IA lo analice.');
+            if (!text && !currentGlobalAiPhoto) {
+                alert('Por favor escribe lo que comiste o toma una foto para que Gemini la analice.');
                 input?.focus();
                 return;
             }
@@ -866,6 +938,8 @@
                     },
                     body: JSON.stringify({
                         text: text,
+                        image_b64: currentGlobalAiPhoto ? currentGlobalAiPhoto.b64 : null,
+                        image_mime_type: currentGlobalAiPhoto ? currentGlobalAiPhoto.mime : null,
                         date: date,
                         meal_type: mealType,
                         auto_save: true
