@@ -430,6 +430,20 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Collapsible Elements Styling */
+        .cursor-pointer {
+            cursor: pointer;
+            user-select: none;
+        }
+        .chevron-rotate {
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-block;
+        }
+        .collapsed .chevron-rotate,
+        [aria-expanded="false"] .chevron-rotate {
+            transform: rotate(-90deg);
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -557,12 +571,11 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Mobile Floating AI Button -->
+    <!-- Mobile Floating AI Button (FAB Circle, elevated above bottom menu) -->
     {% if user.is_authenticated %}
-    <div class="position-fixed d-lg-none" style="bottom: calc(72px + var(--safe-bottom)); right: 14px; z-index: 1035;">
-        <button type="button" class="btn btn-primary rounded-pill shadow-lg py-2 px-3 d-flex align-items-center gap-2 border border-info border-opacity-50" data-bs-toggle="modal" data-bs-target="#globalAiModal" style="background: linear-gradient(135deg, #0284c7, #0f766e);">
-            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-6"></i>
-            <span class="fw-bold small text-light" style="font-size: 0.8rem;">Gemini IA</span>
+    <div class="position-fixed d-lg-none" style="bottom: calc(88px + var(--safe-bottom)); right: 16px; z-index: 1040;">
+        <button type="button" class="btn rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 border border-info border-opacity-75" data-bs-toggle="modal" data-bs-target="#globalAiModal" title="Gemini 3.5 Flash Lite" style="width: 56px; height: 56px; background: linear-gradient(135deg, #0284c7 0%, #0f766e 100%); box-shadow: 0 8px 24px rgba(2, 132, 199, 0.5); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-4"></i>
         </button>
     </div>
     {% endif %}
@@ -632,7 +645,7 @@
                                     <i class="fa-solid fa-camera text-warning fs-5"></i>
                                 </button>
                                 <textarea id="globalAiInput" rows="2" class="form-control" placeholder="Escribe lo que comiste o toma una foto del plato..."></textarea>
-                                <button type="button" id="btnGlobalVoice" class="btn btn-outline-secondary px-3" onclick="toggleGlobalVoice()" title="Dictar por voz" style="display: none;">
+                                <button type="button" id="btnGlobalVoice" class="btn btn-outline-secondary px-3" onclick="toggleGlobalVoice()" title="Dictar por voz">
                                     <i class="fa-solid fa-microphone text-info"></i>
                                 </button>
                             </div>
@@ -838,13 +851,30 @@
         });
 
         function toggleGlobalVoice() {
-            if (!globalSpeechRec) return;
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                alert("El reconocimiento de voz web no está disponible en este navegador. Puedes escribir o usar el dictado por voz de tu teclado.");
+                return;
+            }
+            if (!globalSpeechRec) {
+                globalSpeechRec = new SpeechRec();
+                globalSpeechRec.lang = 'es-ES';
+                globalSpeechRec.continuous = false;
+                globalSpeechRec.interimResults = false;
+                globalSpeechRec.onresult = (e) => {
+                    const current = document.getElementById('globalAiInput').value;
+                    document.getElementById('globalAiInput').value = (current ? current + ' ' : '') + e.results[0][0].transcript;
+                    stopGlobalVoice();
+                };
+                globalSpeechRec.onerror = () => stopGlobalVoice();
+                globalSpeechRec.onend = () => stopGlobalVoice();
+            }
             if (isGlobalRecording) {
                 stopGlobalVoice();
             } else {
                 isGlobalRecording = true;
-                document.getElementById('btnGlobalVoice').classList.add('btn-danger');
-                globalSpeechRec.start();
+                document.getElementById('btnGlobalVoice')?.classList.add('btn-danger', 'mic-active');
+                try { globalSpeechRec.start(); } catch(e) { console.warn(e); }
             }
         }
 
