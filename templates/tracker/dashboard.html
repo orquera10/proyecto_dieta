@@ -969,11 +969,11 @@
         MOMENTO DEL DÍA
     </div>
     <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 mb-3" style="scrollbar-width: none;">
-        <button type="button" class="assistant-moment-pill" data-meal="desayuno" onclick="selectAssistantMeal('desayuno')">Desayuno</button>
-        <button type="button" class="assistant-moment-pill active" data-meal="almuerzo" onclick="selectAssistantMeal('almuerzo')">Almuerzo</button>
-        <button type="button" class="assistant-moment-pill" data-meal="merienda" onclick="selectAssistantMeal('merienda')">Merienda</button>
-        <button type="button" class="assistant-moment-pill" data-meal="cena" onclick="selectAssistantMeal('cena')">Cena</button>
-        <button type="button" class="assistant-moment-pill" data-meal="snack" onclick="selectAssistantMeal('snack')">Snack</button>
+        <button type="button" class="assistant-moment-pill" data-meal="desayuno" onclick="selectAssistantMeal('desayuno', true)">Desayuno</button>
+        <button type="button" class="assistant-moment-pill" data-meal="almuerzo" onclick="selectAssistantMeal('almuerzo', true)">Almuerzo</button>
+        <button type="button" class="assistant-moment-pill" data-meal="merienda" onclick="selectAssistantMeal('merienda', true)">Merienda</button>
+        <button type="button" class="assistant-moment-pill" data-meal="cena" onclick="selectAssistantMeal('cena', true)">Cena</button>
+        <button type="button" class="assistant-moment-pill" data-meal="snack" onclick="selectAssistantMeal('snack', true)">Snack</button>
     </div>
 
     <!-- Hidden inputs for camera capture and gallery file picker -->
@@ -1219,9 +1219,11 @@
 
     // Modal Management
     const mealsDataMap = {{ meals_data_json|safe }};
+    const defaultPendingMealCode = '{{ pending_meal_code|default:"cena" }}';
     let currentDetailMealCode = 'almuerzo';
     let activeQuickMealType = 'almuerzo';
-    let activeAssistantMealType = 'almuerzo';
+    let activeAssistantMealType = defaultPendingMealCode;
+    let userManuallyPickedAssistantMeal = false;
 
     function closeAllModals() {
         document.getElementById('sheetBackdrop').classList.remove('open');
@@ -1352,9 +1354,11 @@
     function openAssistantModal(mealCode) {
         closeAllModals();
         if (mealCode) {
-            selectAssistantMeal(mealCode);
+            userManuallyPickedAssistantMeal = true;
+            selectAssistantMeal(mealCode, true);
         } else {
-            selectAssistantMeal(activeQuickMealType || 'almuerzo');
+            userManuallyPickedAssistantMeal = false;
+            selectAssistantMeal(defaultPendingMealCode, false);
         }
         document.getElementById('sheetBackdrop').classList.add('open');
         document.getElementById('assistantSheet').classList.add('open');
@@ -1365,7 +1369,8 @@
         document.getElementById('assistantSheet').classList.remove('open');
     }
 
-    function selectAssistantMeal(mealCode) {
+    function selectAssistantMeal(mealCode, isManual = false) {
+        if (isManual) userManuallyPickedAssistantMeal = true;
         activeAssistantMealType = mealCode;
         document.querySelectorAll('.assistant-moment-pill').forEach(pill => {
             if (pill.dataset.meal === mealCode) {
@@ -1700,17 +1705,14 @@
     let lastAdvisorSuggestions = [];
 
     function openFoodAdvisorModal() {
-        // Default meal to 'cena' or 'merienda' depending on time of day
-        const hour = new Date().getHours();
-        let suggestedMeal = 'cena';
-        if (hour < 11) suggestedMeal = 'desayuno';
-        else if (hour < 15) suggestedMeal = 'almuerzo';
-        else if (hour < 19) suggestedMeal = 'merienda';
-        openAssistantModal(suggestedMeal);
+        openAssistantModal();
         showNutraAdvisor();
     }
 
     function showNutraAdvisor() {
+        if (!userManuallyPickedAssistantMeal) {
+            selectAssistantMeal(defaultPendingMealCode, false);
+        }
         const aiBox = document.getElementById('nutraAiActiveBox');
         if (aiBox) aiBox.classList.add('d-none');
         const advBox = document.getElementById('nutraAdvisorActiveBox');
@@ -1758,12 +1760,16 @@
                 },
                 body: JSON.stringify({
                     query: query,
-                    meal_type: activeAssistantMealType || 'cena',
+                    meal_type: activeAssistantMealType || defaultPendingMealCode,
+                    user_explicit_meal: userManuallyPickedAssistantMeal,
                     date: '{{ selected_date|date:"Y-m-d" }}'
                 })
             });
             const data = await resp.json();
             if (data.success) {
+                if (data.recommended_meal_type) {
+                    selectAssistantMeal(data.recommended_meal_type, false);
+                }
                 lastAdvisorSuggestions = data.suggestions || [];
                 adviceEl.innerHTML = `<i class="fa-solid fa-sparkles me-1"></i> ${data.advice || 'Acá tenés opciones adaptadas a tus calorías restantes:'}`;
 
@@ -1829,7 +1835,7 @@
                     carbs: s.carbs,
                     fat: s.fat,
                     grams: s.grams || 150,
-                    meal_type: activeAssistantMealType || s.meal_type || 'cena',
+                    meal_type: s.meal_type || activeAssistantMealType || defaultPendingMealCode,
                     date: '{{ selected_date|date:"Y-m-d" }}',
                     is_portion_totals: true
                 })

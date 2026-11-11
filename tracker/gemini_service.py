@@ -257,7 +257,17 @@ def calculate_deficit_with_gemini(data):
     return calc
 
 
-def suggest_meal_with_gemini(user_query="", remaining_calories=500, remaining_protein=30, remaining_carbs=40, remaining_fat=15, target_calories=1800, meal_type="cena"):
+def suggest_meal_with_gemini(
+    user_query="",
+    remaining_calories=500,
+    remaining_protein=30,
+    remaining_carbs=40,
+    remaining_fat=15,
+    target_calories=1800,
+    meal_type="cena",
+    logged_meals=None,
+    eaten_today=None,
+):
     """
     Sugiere comidas o colaciones adaptadas a las calorías y macronutrientes restantes
     del usuario en el día usando Gemini.
@@ -269,6 +279,8 @@ def suggest_meal_with_gemini(user_query="", remaining_calories=500, remaining_pr
         "REGLAS:\n"
         "- Ten muy en cuenta las calorías restantes. Si le quedan pocas calorías (ej. < 200 kcal), sugiere colaciones livianas y saciantes. "
         "Si ya se pasó del objetivo (calorías restantes <= 0), sugiere opciones ultrabajas en calorías (infusiones, vegetales crocantes, caldos) y consejos amables de no frustrarse.\n"
+        "- Respeta estrictamente el momento del día objetivo y NO recomiendes comidas correspondientes a momentos que el usuario YA registró hoy (salvo que lo pida explícitamente).\n"
+        "- Si ya consumió comidas similares hoy, proponé variedad nutricional y de sabor.\n"
         "- Prioriza cumplir el objetivo de proteína si le falta proteína.\n"
         "- Usa lenguaje cercano, motivador, en español claro con ingredientes accesibles.\n"
         "- Devuelve EXCLUSIVAMENTE un JSON con las siguientes claves exactas:\n"
@@ -286,6 +298,8 @@ def suggest_meal_with_gemini(user_query="", remaining_calories=500, remaining_pr
     )
 
     rem_cal_int = int(round(float(remaining_calories)))
+    logged_list = [str(m) for m in (logged_meals or []) if m]
+    eaten_list = [str(item) for item in (eaten_today or []) if item]
     prompt = (
         f"Estado nutricional del usuario hoy:\n"
         f"- Objetivo calórico diario: {int(round(float(target_calories)))} kcal\n"
@@ -293,12 +307,15 @@ def suggest_meal_with_gemini(user_query="", remaining_calories=500, remaining_pr
         f"- Proteína restante recomendada: {int(round(float(remaining_protein)))} g\n"
         f"- Carbohidratos restantes recomendados: {int(round(float(remaining_carbs)))} g\n"
         f"- Grasas restantes recomendadas: {int(round(float(remaining_fat)))} g\n"
-        f"- Momento del día seleccionado: {meal_type}\n"
+        f"- Comidas YA registradas hoy: {', '.join(logged_list) if logged_list else 'Ninguna aún'}\n"
+        f"- Alimentos ya consumidos hoy: {', '.join(eaten_list) if eaten_list else 'Ninguno aún'}\n"
+        f"- Momento del día pendiente a recomendar: {meal_type}\n"
     )
     if user_query and user_query.strip():
         prompt += f"\nPregunta o preferencia del usuario: \"{user_query.strip()}\"\n"
+        prompt += f"IMPORTANTE: Toda sugerencia debe ser adecuada para '{meal_type}' (con meal_type='{meal_type}') salvo que la pregunta pida otro momento puntual."
     else:
-        prompt += f"\nEl usuario quiere saber qué puede comer en {meal_type} para acercarse a completar sus {rem_cal_int} kcal restantes sin excederse."
+        prompt += f"\nEl usuario quiere saber qué puede comer en '{meal_type}' para acercarse a completar sus {rem_cal_int} kcal restantes sin repetir comidas ya cargadas."
 
     res = call_gemini_api(prompt=prompt, system_instruction=system_instruction, temperature=0.4)
     if "error" in res:

@@ -1,3 +1,4 @@
+import os
 import json
 from decimal import Decimal
 from django.test import TestCase
@@ -181,3 +182,96 @@ class DeficitTrackerTestCase(TestCase):
         self.assertIn('suggestions', data)
         self.assertTrue(len(data['suggestions']) > 0)
         self.assertIn('remaining_calories', data)
+
+    def test_ai_suggest_meal_detects_pending_cena(self):
+        from .models import FoodItem, MealEntry
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        f1 = FoodItem.objects.create(user=self.user, name='Café con leche y tostadas', calories=320, protein=14, carbs=40, fat=10, serving_size=100)
+        f2 = FoodItem.objects.create(user=self.user, name='Pollo con ensalada', calories=520, protein=45, carbs=25, fat=18, serving_size=100)
+        f3 = FoodItem.objects.create(user=self.user, name='Yogur con fruta', calories=210, protein=12, carbs=28, fat=4, serving_size=100)
+
+        MealEntry.objects.create(user=self.user, date=today, meal_type='desayuno', food_item=f1, grams_or_amount=100)
+        MealEntry.objects.create(user=self.user, date=today, meal_type='almuerzo', food_item=f2, grams_or_amount=100)
+        MealEntry.objects.create(user=self.user, date=today, meal_type='merienda', food_item=f3, grams_or_amount=100)
+
+        self.client.login(username='dario_test', password='TestPassword123')
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertEqual(dash_res.context['pending_meal_code'], 'cena')
+
+        response = self.client.post(
+            reverse('ai_suggest_meal'),
+            data=json.dumps({
+                'query': '¿Qué me recomendás comer para completar el día según mis calorías restantes?',
+                'meal_type': 'almuerzo',
+                'user_explicit_meal': False,
+                'date': today.strftime('%Y-%m-%d'),
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['recommended_meal_type'], 'cena')
+
+    def test_persistent_photo_served_after_disk_deletion(self):
+        import io
+        import base64
+        from PIL import Image
+        from unittest.mock import patch
+        from .models import MealEntry
+        from django.utils import timezone
+
+        # Generate valid in-memory PNG image
+        img = Image.new('RGB', (60, 60), color=(200, 90, 40))
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        b64_img = base64.b64encode(buf.getvalue()).decode('ascii')
+
+        mock_gemini_resp = {
+            "meal_type": "almuerzo",
+            "foods": [{
+                "name": "Bowl de pollo test",
+                "grams": 250,
+                "calories": 420,
+                "protein": 38,
+                "carbs": 35,
+                "fat": 12
+            }]
+        }
+
+        self.client.login(username='dario_test', password='TestPassword123')
+        with patch('tracker.views.parse_meal_with_gemini', return_value=mock_gemini_resp):
+            resp = self.client.post(
+                reverse('ai_parse_meal'),
+                data=json.dumps({
+                    'image_b64': b64_img,
+                    'image_mime_type': 'image/png',
+                    'meal_type': 'almuerzo',
+                    'auto_save': True,
+                    'date': timezone.localdate().strftime('%Y-%m-%d'),
+                }),
+                content_type='application/json'
+            )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['success'])
+
+        entry = MealEntry.objects.filter(user=self.user, meal_type='almuerzo').latest('id')
+        self.assertTrue(bool(entry.photo_data))
+
+        # Simulate Coolify redeploy wiping ephemeral MEDIA_ROOT file
+        if entry.photo and os.path.exists(entry.photo.path):
+            os.remove(entry.photo.path)
+
+        photo_url = reverse('meal_photo', args=[entry.id])
+        photo_res = self.client.get(photo_url)
+        self.assertEqual(photo_res.status_code, 200)
+        self.assertEqual(photo_res['Content-Type'], 'image/jpeg')
+        self.assertTrue(len(photo_res.content) > 100)
+
+        # Dashboard must still link to the persistent photo URL instead of Unsplash fallback
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertContains(dash_res, photo_url)

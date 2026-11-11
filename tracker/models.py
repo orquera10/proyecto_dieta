@@ -119,6 +119,7 @@ class FoodItem(models.Model):
     )
     is_favorite = models.BooleanField(default=False, verbose_name="Favorito")
     photo = models.ImageField(upload_to='food_photos/', blank=True, null=True, verbose_name="Foto del alimento")
+    photo_data = models.TextField(blank=True, default='', verbose_name="Foto persistente (base64 JPEG)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -151,6 +152,7 @@ class MealEntry(models.Model):
         verbose_name="Cantidad consumida (g/ml)"
     )
     photo = models.ImageField(upload_to='meal_photos/', blank=True, null=True, verbose_name="Foto de la comida")
+    photo_data = models.TextField(blank=True, default='', verbose_name="Foto persistente (base64 JPEG)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

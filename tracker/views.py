@@ -1,4 +1,6 @@
 import os
+import io
+import base64
 import datetime
 import logging
 from decimal import Decimal
@@ -9,12 +11,85 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
+from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Q
 from .models import UserProfile, FoodItem, MealEntry, WeightLog
 from .forms import UserProfileForm, FoodItemForm, MealEntryForm, WeightLogForm, RegisterForm
 from .gemini_service import parse_meal_with_gemini, estimate_food_nutrition_with_gemini, calculate_deficit_with_gemini
+
+
+def compress_image_to_jpeg_b64(img_bytes, max_size=800, quality=78):
+    """Comprime y normaliza orientación EXIF de una imagen a JPEG liviano + base64 para persistencia en BD."""
+    try:
+        from PIL import Image, ImageOps
+        img = Image.open(io.BytesIO(img_bytes))
+        img = ImageOps.exif_transpose(img)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            bg = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            bg.paste(img, mask=img.split()[-1] if 'A' in img.mode else None)
+            img = bg
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        out = io.BytesIO()
+        img.save(out, format='JPEG', quality=quality, optimize=True)
+        compressed = out.getvalue()
+        return compressed, base64.b64encode(compressed).decode('ascii'), 'jpg'
+    except Exception as err:
+        logger.warning(f"No se pudo recomprimir imagen con Pillow: {err}")
+        return img_bytes, base64.b64encode(img_bytes).decode('ascii'), 'jpg'
+
+
+def get_next_pending_meal(logged_meal_types, current_hour=None):
+    """Determina el próximo momento del día pendiente según las comidas ya registradas."""
+    logged_set = set(logged_meal_types or [])
+    main_order = ['desayuno', 'almuerzo', 'merienda', 'cena']
+    logged_indices = [i for i, code in enumerate(main_order) if code in logged_set]
+    if logged_indices:
+        max_idx = max(logged_indices)
+        for idx in range(max_idx + 1, len(main_order)):
+            if main_order[idx] not in logged_set:
+                return main_order[idx]
+        return 'snack'
+    hour = current_hour if current_hour is not None else timezone.localtime().hour
+    if hour < 11:
+        return 'desayuno'
+    if hour < 15:
+        return 'almuerzo'
+    if hour < 19:
+        return 'merienda'
+    return 'cena'
+
+
+def resolve_entry_photo_url(entry):
+    """Devuelve URL persistente de foto (/meal/photo/<id>/ o /food/photo/<id>/) si existe en BD o disco."""
+    if not entry:
+        return None
+    if getattr(entry, 'photo_data', ''):
+        return reverse('meal_photo', args=[entry.id])
+    photo_field = getattr(entry, 'photo', None)
+    if photo_field:
+        try:
+            if os.path.exists(photo_field.path):
+                return reverse('meal_photo', args=[entry.id])
+        except Exception:
+            pass
+    food_item = getattr(entry, 'food_item', None)
+    if food_item:
+        if getattr(food_item, 'photo_data', ''):
+            return reverse('food_photo', args=[food_item.id])
+        food_photo = getattr(food_item, 'photo', None)
+        if food_photo:
+            try:
+                if os.path.exists(food_photo.path):
+                    return reverse('food_photo', args=[food_item.id])
+            except Exception:
+                pass
+    return None
 
 
 def register_view(request):
@@ -172,19 +247,9 @@ def dashboard_view(request):
             'desayuno': '08:20', 'almuerzo': '13:10', 'merienda': '17:00', 'cena': '21:00', 'snack': '11:00'
         }.get(code, '12:00')
 
-        def get_valid_photo_url(field):
-            if not field:
-                return None
-            try:
-                if os.path.exists(field.path):
-                    return field.url
-            except Exception:
-                pass
-            return None
-
         entries_detail = []
         for e in cat_entries:
-            e_photo = get_valid_photo_url(getattr(e, 'photo', None)) or get_valid_photo_url(getattr(e.food_item, 'photo', None)) or ''
+            e_photo = resolve_entry_photo_url(e) or ''
 
             entries_detail.append({
                 'id': e.id,
@@ -199,7 +264,7 @@ def dashboard_view(request):
 
         photo_url = None
         for e in cat_entries:
-            url = get_valid_photo_url(getattr(e, 'photo', None)) or get_valid_photo_url(getattr(e.food_item, 'photo', None))
+            url = resolve_entry_photo_url(e)
             if url:
                 photo_url = url
                 break
@@ -397,6 +462,7 @@ def dashboard_view(request):
         'chart_area_points': chart_area_points,
         'weight_points': weight_points,
         'recent_weight_entries': recent_weight_entries,
+        'pending_meal_code': get_next_pending_meal([m['code'] for m in meals_data if m['has_entries']]),
         'active_tab': request.GET.get('tab', 'today'),
     }
     return render(request, 'tracker/dashboard.html', context)
@@ -433,6 +499,60 @@ def delete_meal_entry(request, pk):
         entry.delete()
         messages.info(request, "Comida eliminada del registro.")
     return redirect(f"/dashboard/?date={date_str}")
+
+
+@login_required
+def meal_photo_view(request, entry_id):
+    """Sirve la foto de un MealEntry desde archivo local o desde respaldo persistente en BD."""
+    entry = get_object_or_404(MealEntry, pk=entry_id, user=request.user)
+    if entry.photo:
+        try:
+            if os.path.exists(entry.photo.path):
+                with open(entry.photo.path, 'rb') as f:
+                    resp = HttpResponse(f.read(), content_type='image/jpeg')
+                    resp['Cache-Control'] = 'private, max-age=86400'
+                    return resp
+        except Exception:
+            pass
+    if entry.photo_data:
+        try:
+            raw_b64 = entry.photo_data.split(',', 1)[-1]
+            img_bytes = base64.b64decode(raw_b64)
+            resp = HttpResponse(img_bytes, content_type='image/jpeg')
+            resp['Cache-Control'] = 'private, max-age=86400'
+            return resp
+        except Exception as err:
+            logger.error(f"Error sirviendo photo_data de MealEntry {entry_id}: {err}")
+    raise Http404("Foto no encontrada")
+
+
+@login_required
+def food_photo_view(request, food_id):
+    """Sirve la foto de un FoodItem desde archivo local o desde respaldo persistente en BD."""
+    food_item = get_object_or_404(
+        FoodItem,
+        Q(user__isnull=True) | Q(user=request.user),
+        pk=food_id
+    )
+    if food_item.photo:
+        try:
+            if os.path.exists(food_item.photo.path):
+                with open(food_item.photo.path, 'rb') as f:
+                    resp = HttpResponse(f.read(), content_type='image/jpeg')
+                    resp['Cache-Control'] = 'private, max-age=86400'
+                    return resp
+        except Exception:
+            pass
+    if food_item.photo_data:
+        try:
+            raw_b64 = food_item.photo_data.split(',', 1)[-1]
+            img_bytes = base64.b64decode(raw_b64)
+            resp = HttpResponse(img_bytes, content_type='image/jpeg')
+            resp['Cache-Control'] = 'private, max-age=86400'
+            return resp
+        except Exception as err:
+            logger.error(f"Error sirviendo photo_data de FoodItem {food_id}: {err}")
+    raise Http404("Foto no encontrada")
 
 
 @login_required
@@ -709,14 +829,15 @@ def ai_parse_meal_view(request):
             import uuid
 
             photo_file = None
+            photo_b64_saved = ''
             if image_b64:
                 try:
-                    img_bytes = base64.b64decode(image_b64)
-                    ext = 'png' if 'png' in image_mime_type else 'jpg'
+                    raw_bytes = base64.b64decode(image_b64)
+                    comp_bytes, photo_b64_saved, ext = compress_image_to_jpeg_b64(raw_bytes)
                     fname = f"meal_{uuid.uuid4().hex[:8]}.{ext}"
                     os.makedirs(settings.MEDIA_ROOT / 'meal_photos', exist_ok=True)
                     os.makedirs(settings.MEDIA_ROOT / 'food_photos', exist_ok=True)
-                    photo_file = (fname, img_bytes)
+                    photo_file = (fname, comp_bytes)
                 except Exception as err:
                     logger.error(f"Error decodificando foto base64: {err}")
 
@@ -755,6 +876,10 @@ def ai_parse_meal_view(request):
                         is_favorite=False
                     )
 
+                if photo_b64_saved and not food_obj.photo_data:
+                    food_obj.photo_data = photo_b64_saved
+                    food_obj.save(update_fields=['photo_data'])
+
                 if photo_file and not food_obj.photo:
                     try:
                         food_obj.photo.save(photo_file[0], ContentFile(photo_file[1]), save=True)
@@ -767,7 +892,8 @@ def ai_parse_meal_view(request):
                     date=target_date,
                     meal_type=item_meal_type,
                     food_item=food_obj,
-                    grams_or_amount=grams
+                    grams_or_amount=grams,
+                    photo_data=photo_b64_saved
                 )
 
                 if photo_file:
@@ -911,7 +1037,8 @@ def ai_suggest_meal_view(request):
             data = request.POST
 
         query = data.get('query', '').strip()
-        meal_type = data.get('meal_type', 'cena').lower()
+        requested_meal = str(data.get('meal_type') or '').lower().strip()
+        user_explicit_meal = bool(data.get('user_explicit_meal', False))
         date_str = data.get('date')
 
         target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
@@ -922,11 +1049,46 @@ def ai_suggest_meal_view(request):
         target_carbs = float(profile.carbs_target or 160)
         target_fat = float(profile.fat_target or 55)
 
-        today_entries = MealEntry.objects.filter(user=request.user, date=target_date)
+        today_entries = MealEntry.objects.filter(user=request.user, date=target_date).select_related('food_item')
         total_cal = float(sum(e.total_calories for e in today_entries))
         total_prot = float(sum(e.total_protein for e in today_entries))
         total_carbs = float(sum(e.total_carbs for e in today_entries))
         total_fat = float(sum(e.total_fat for e in today_entries))
+
+        logged_meal_types = set(e.meal_type for e in today_entries)
+        meal_label_map = dict(MealEntry.MEAL_CHOICES)
+        logged_labels = [
+            meal_label_map[m] for m in ['desayuno', 'almuerzo', 'merienda', 'cena', 'snack']
+            if m in logged_meal_types
+        ]
+        eaten_today = [
+            f"{e.get_meal_type_display()}: {e.food_item.name} ({int(round(e.total_calories))} kcal)"
+            for e in today_entries
+        ]
+
+        q_lower = query.lower()
+        explicit_in_query = None
+        for kw, code in [
+            ('desayun', 'desayuno'),
+            ('almuerz', 'almuerzo'), ('almorz', 'almuerzo'),
+            ('meriend', 'merienda'), ('merend', 'merienda'),
+            ('cenar', 'cena'), ('cena', 'cena'),
+            ('snack', 'snack'), ('colación', 'snack'), ('colacion', 'snack'),
+        ]:
+            if kw in q_lower:
+                explicit_in_query = code
+                break
+
+        valid_meals = {'desayuno', 'almuerzo', 'merienda', 'cena', 'snack'}
+        asks_complete_day = ('completar el día' in q_lower) or ('completar el dia' in q_lower) or not q_lower
+        if explicit_in_query:
+            meal_type = explicit_in_query
+        elif (not user_explicit_meal or asks_complete_day) and (requested_meal not in valid_meals or requested_meal in logged_meal_types):
+            meal_type = get_next_pending_meal(logged_meal_types)
+        elif requested_meal in valid_meals:
+            meal_type = requested_meal
+        else:
+            meal_type = get_next_pending_meal(logged_meal_types)
 
         rem_cals = target_cals - total_cal
         rem_prot = max(0.0, target_prot - total_prot)
@@ -941,12 +1103,16 @@ def ai_suggest_meal_view(request):
             remaining_carbs=rem_carbs,
             remaining_fat=rem_fat,
             target_calories=target_cals,
-            meal_type=meal_type
+            meal_type=meal_type,
+            logged_meals=logged_labels,
+            eaten_today=eaten_today,
         )
 
         if "error" in result:
             return JsonResponse({"error": result["error"]}, status=500)
 
+        result["recommended_meal_type"] = meal_type
+        result["logged_meals"] = list(logged_meal_types)
         result["remaining_calories"] = int(round(rem_cals))
         result["remaining_protein"] = int(round(rem_prot))
         result["remaining_carbs"] = int(round(rem_carbs))
