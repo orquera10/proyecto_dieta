@@ -155,3 +155,21 @@ class DeficitTrackerTestCase(TestCase):
         # Now dashboard should return 200
         dash_res = self.client.get(reverse('dashboard'))
         self.assertEqual(dash_res.status_code, 200)
+
+    def test_ai_suggest_meal_endpoint(self):
+        self.client.login(username='dario_test', password='TestPassword123')
+        response = self.client.post(
+            reverse('ai_suggest_meal'),
+            data=json.dumps({
+                'query': '¿Qué puedo cenar liviano para completar mis calorías?',
+                'meal_type': 'cena'
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIn('advice', data)
+        self.assertIn('suggestions', data)
+        self.assertTrue(len(data['suggestions']) > 0)
+        self.assertIn('remaining_calories', data)

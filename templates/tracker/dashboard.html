@@ -620,13 +620,17 @@
                 Registrar es más fácil con IA.
             </h3>
             <p style="font-size: 0.88rem; color: #43523f; margin-bottom: 0; line-height: 1.45;">
-                Sacá una foto, contanos qué comiste o mandanos un audio.
+                Sacá una foto, contanos qué comiste o consultale qué comer según tus calorías restantes.
             </p>
             <button type="button" class="btn-ai-pill" onclick="openAssistantModal()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="#b8f34a">
                     <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
                 </svg>
                 <span>Abrir asistente</span>
+            </button>
+            <button type="button" class="btn w-100 py-2.5 rounded-pill fw-bold mt-2 d-flex align-items-center justify-content-center gap-2" style="background: rgba(23,33,22,0.08); color: #172116; font-size: 0.88rem; border: none;" onclick="openFoodAdvisorModal()">
+                <i class="fa-regular fa-lightbulb"></i>
+                <span>¿Qué puedo comer para completar mis calorías?</span>
             </button>
         </div>
     </div>
@@ -1022,6 +1026,20 @@
         </div>
     </button>
 
+    <!-- Option 5: Consultar qué comer para completar calorías -->
+    <button type="button" class="assistant-card-btn" style="background: #f6fae9; border: 1.5px solid #cde986;" onclick="showNutraAdvisor()">
+        <div class="assistant-icon-box" style="background: #b8f34a; color: #172116;">
+            <i class="fa-regular fa-lightbulb fs-5"></i>
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between">
+                <strong style="font-size: 0.95rem; color: #172116;">¿Qué puedo comer hoy?</strong>
+                <span class="badge rounded-pill" style="background: #172116; color: #b8f34a; font-size: 0.65rem; font-weight: 800;">CONSULTA IA</span>
+            </div>
+            <small style="color: #53634e; font-size: 0.8rem;">Pedile ideas para completar tus {{ remaining_calories|floatformat:0 }} kcal restantes</small>
+        </div>
+    </button>
+
     <!-- Inline Assistant Input / Loading area -->
     <div id="nutraAiActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: rgba(23,33,22,0.03); border: 1px solid rgba(23,33,22,0.08);">
         <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-2 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
@@ -1042,6 +1060,80 @@
         <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success">
             <div class="spinner-border spinner-border-sm me-2"></div>
             <span>Gemini IA calculando porciones y calorías...</span>
+        </div>
+    </div>
+
+    <!-- Inline Food Advisor / Consultation Section -->
+    <div id="nutraAdvisorActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: #fbfcf8; border: 1.5px solid rgba(23,33,22,0.12);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-regular fa-lightbulb" style="color: #4e7110;"></i>
+                <strong style="font-size: 0.92rem; color: #172116;">Consultar sobre comida</strong>
+            </div>
+            <button type="button" class="btn btn-sm p-0 text-muted" onclick="hideNutraAdvisor()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Budget Pill Header -->
+        <div class="p-2.5 rounded-3 mb-3" style="background: #f0f4e8; border: 1px solid rgba(23,33,22,0.06);">
+            <div class="d-flex align-items-baseline justify-content-between mb-1">
+                <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6d7b68;">
+                    {% if remaining_calories >= 0 %}TE QUEDAN HOY{% else %}SUPERÁVIT DE HOY{% endif %}
+                </span>
+                <strong style="font-size: 1rem; color: #172116; font-weight: 900;">
+                    {% if remaining_calories >= 0 %}{{ remaining_calories|floatformat:0 }} kcal{% else %}+{{ remaining_calories|stringformat:"+d"|slice:"1:" }} kcal{% endif %}
+                </strong>
+            </div>
+            <div class="d-flex align-items-center gap-1.5 flex-wrap" style="font-size: 0.72rem; font-weight: 700;">
+                <span class="badge rounded-pill" style="background: rgba(184, 243, 74, 0.35); color: #2d4508;">
+                    P: {{ remaining_protein|floatformat:0 }}g rest.
+                </span>
+                <span class="badge rounded-pill" style="background: rgba(245, 158, 11, 0.18); color: #b45309;">
+                    C: {{ remaining_carbs|floatformat:0 }}g rest.
+                </span>
+                <span class="badge rounded-pill" style="background: rgba(168, 85, 247, 0.16); color: #7e22ce;">
+                    G: {{ remaining_fat|floatformat:0 }}g rest.
+                </span>
+            </div>
+        </div>
+
+        <!-- Quick prompt chips -->
+        <div class="d-flex align-items-center gap-1.5 overflow-x-auto pb-2 mb-2.5" style="scrollbar-width: none;">
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('¿Qué puedo comer para completar mis calorías restantes?')">
+                ✨ Completar el día
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('¿Qué puedo cenar liviano que encaje con mi déficit?')">
+                🥗 Cena liviana
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('Necesito un snack alto en proteína y bajo en calorías')">
+                💪 Snack proteico
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('Algo dulce para el antojo sin salir de mis calorías')">
+                🍫 Antojo dulce
+            </button>
+        </div>
+
+        <!-- Query Input -->
+        <div class="input-group mb-2">
+            <input type="text" id="nutraAdvisorInput" class="form-control rounded-start-pill border-end-0 py-2 px-3 bg-white text-dark" placeholder="Ej: ¿Qué ceno? o tengo huevos y atún..." style="font-size: 0.88rem; border-color: rgba(23,33,22,0.15);" onkeydown="if(event.key === 'Enter') submitNutraAdvisor()">
+            <button type="button" id="btnSubmitNutraAdvisor" class="btn btn-dark rounded-end-pill px-3.5 fw-bold" style="background: #172116; font-size: 0.88rem;" onclick="submitNutraAdvisor()">
+                <span>Consultar</span>
+            </button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="nutraAdvisorSpinner" class="d-none text-center my-3 small text-success">
+            <div class="spinner-border spinner-border-sm me-2"></div>
+            <span>Gemini IA buscando ideas para tu presupuesto calórico...</span>
+        </div>
+
+        <!-- Results Container -->
+        <div id="nutraAdvisorResults" class="d-none mt-3">
+            <div id="nutraAdvisorAdvice" class="p-3 rounded-4 mb-3" style="background: #eef8d2; color: #1e3309; font-size: 0.85rem; line-height: 1.45; font-weight: 600;">
+            </div>
+            <div id="nutraAdvisorCards" class="d-flex flex-column gap-2.5">
+            </div>
         </div>
     </div>
 </div>
@@ -1506,6 +1598,8 @@
     }
 
     function showNutraTextInput() {
+        const advBox = document.getElementById('nutraAdvisorActiveBox');
+        if (advBox) advBox.classList.add('d-none');
         document.getElementById('nutraAiActiveBox').classList.remove('d-none');
         document.getElementById('nutraAiInput').focus();
     }
@@ -1599,6 +1693,163 @@
         } finally {
             btn.disabled = false;
             spinner.classList.add('d-none');
+        }
+    }
+
+    // Food Advisor / Consultar sobre comida
+    let lastAdvisorSuggestions = [];
+
+    function openFoodAdvisorModal() {
+        // Default meal to 'cena' or 'merienda' depending on time of day
+        const hour = new Date().getHours();
+        let suggestedMeal = 'cena';
+        if (hour < 11) suggestedMeal = 'desayuno';
+        else if (hour < 15) suggestedMeal = 'almuerzo';
+        else if (hour < 19) suggestedMeal = 'merienda';
+        openAssistantModal(suggestedMeal);
+        showNutraAdvisor();
+    }
+
+    function showNutraAdvisor() {
+        const aiBox = document.getElementById('nutraAiActiveBox');
+        if (aiBox) aiBox.classList.add('d-none');
+        const advBox = document.getElementById('nutraAdvisorActiveBox');
+        if (advBox) {
+            advBox.classList.remove('d-none');
+            setTimeout(() => {
+                advBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+        const inp = document.getElementById('nutraAdvisorInput');
+        if (inp) inp.focus();
+    }
+
+    function hideNutraAdvisor() {
+        const advBox = document.getElementById('nutraAdvisorActiveBox');
+        if (advBox) advBox.classList.add('d-none');
+    }
+
+    function selectAdvisorChip(queryText) {
+        const inp = document.getElementById('nutraAdvisorInput');
+        if (inp) inp.value = queryText;
+        submitNutraAdvisor();
+    }
+
+    async function submitNutraAdvisor() {
+        const inp = document.getElementById('nutraAdvisorInput');
+        const query = inp ? inp.value.trim() : '';
+
+        const btn = document.getElementById('btnSubmitNutraAdvisor');
+        const spinner = document.getElementById('nutraAdvisorSpinner');
+        const resultsBox = document.getElementById('nutraAdvisorResults');
+        const adviceEl = document.getElementById('nutraAdvisorAdvice');
+        const cardsEl = document.getElementById('nutraAdvisorCards');
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        resultsBox.classList.add('d-none');
+
+        try {
+            const resp = await fetch('{% url "ai_suggest_meal" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    query: query,
+                    meal_type: activeAssistantMealType || 'cena',
+                    date: '{{ selected_date|date:"Y-m-d" }}'
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                lastAdvisorSuggestions = data.suggestions || [];
+                adviceEl.innerHTML = `<i class="fa-solid fa-sparkles me-1"></i> ${data.advice || 'Acá tenés opciones adaptadas a tus calorías restantes:'}`;
+
+                if (lastAdvisorSuggestions.length > 0) {
+                    let html = '';
+                    lastAdvisorSuggestions.forEach((s, idx) => {
+                        html += `
+                            <div class="p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.1); box-shadow: 0 2px 8px rgba(23,33,22,0.03);">
+                                <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                                    <strong style="font-size: 0.95rem; color: #172116; line-height: 1.25;">${s.title}</strong>
+                                    <span class="badge rounded-pill px-2.5 py-1 flex-shrink-0" style="background: #172116; color: #b8f34a; font-weight: 800; font-size: 0.78rem;">
+                                        ${s.calories} kcal
+                                    </span>
+                                </div>
+                                <p style="font-size: 0.8rem; color: #5b6956; margin-bottom: 8px; line-height: 1.4;">${s.description}</p>
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-2" style="font-size: 0.72rem; font-weight: 700;">
+                                    <span class="badge rounded-pill" style="background: rgba(184, 243, 74, 0.28); color: #2d4508;">P: ${s.protein}g</span>
+                                    <span class="badge rounded-pill" style="background: rgba(245, 158, 11, 0.16); color: #b45309;">C: ${s.carbs}g</span>
+                                    <span class="badge rounded-pill" style="background: rgba(168, 85, 247, 0.14); color: #7e22ce;">G: ${s.fat}g</span>
+                                    <span class="badge rounded-pill" style="background: rgba(23,33,22,0.06); color: #43523f;">~${s.grams}g</span>
+                                </div>
+                                ${s.why_fit ? `<div style="font-size: 0.75rem; color: #4e7110; font-weight: 600; margin-bottom: 10px;"><i class="fa-solid fa-check-circle me-1"></i>${s.why_fit}</div>` : ''}
+                                <button type="button" class="btn w-100 py-2 rounded-pill fw-bold" style="background: #e2f7a9; color: #172116; font-size: 0.82rem; border: none;" onclick="registerSuggestedOption(${idx}, this)">
+                                    <i class="fa-solid fa-plus me-1"></i> Registrar en mi día
+                                </button>
+                            </div>
+                        `;
+                    });
+                    cardsEl.innerHTML = html;
+                } else {
+                    cardsEl.innerHTML = '<p class="text-muted small m-0">No se generaron sugerencias específicas. Probá detallar qué ingredientes tenés.</p>';
+                }
+                resultsBox.classList.remove('d-none');
+            } else {
+                alert('IA: ' + (data.error || 'No se pudo obtener una recomendación.'));
+            }
+        } catch (e) {
+            alert('Error de conexión: ' + e);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+        }
+    }
+
+    async function registerSuggestedOption(idx, btnEl) {
+        const s = lastAdvisorSuggestions[idx];
+        if (!s) return;
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Registrando...';
+        }
+        try {
+            const resp = await fetch('{% url "api_quick_add_meal" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    name: s.title,
+                    calories: s.calories,
+                    protein: s.protein,
+                    carbs: s.carbs,
+                    fat: s.fat,
+                    grams: s.grams || 150,
+                    meal_type: activeAssistantMealType || s.meal_type || 'cena',
+                    date: '{{ selected_date|date:"Y-m-d" }}',
+                    is_portion_totals: true
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error al registrar: ' + (data.error || 'Intente nuevamente'));
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Registrar en mi día';
+                }
+            }
+        } catch (e) {
+            alert('Error de conexión: ' + e);
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Registrar en mi día';
+            }
         }
     }
 </script>

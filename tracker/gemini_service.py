@@ -255,3 +255,80 @@ def calculate_deficit_with_gemini(data):
     calc["success"] = True
     calc["model"] = res.get("model")
     return calc
+
+
+def suggest_meal_with_gemini(user_query="", remaining_calories=500, remaining_protein=30, remaining_carbs=40, remaining_fat=15, target_calories=1800, meal_type="cena"):
+    """
+    Sugiere comidas o colaciones adaptadas a las calorías y macronutrientes restantes
+    del usuario en el día usando Gemini.
+    """
+    system_instruction = (
+        "Eres un nutricionista y chef experto en déficit calórico flexible y recomposición corporal. "
+        "Tu tarea es aconsejar al usuario qué comer para completar o acercarse de forma óptima a sus calorías restantes del día, "
+        "o responder su consulta alimentaria específica. "
+        "REGLAS:\n"
+        "- Ten muy en cuenta las calorías restantes. Si le quedan pocas calorías (ej. < 200 kcal), sugiere colaciones livianas y saciantes. "
+        "Si ya se pasó del objetivo (calorías restantes <= 0), sugiere opciones ultrabajas en calorías (infusiones, vegetales crocantes, caldos) y consejos amables de no frustrarse.\n"
+        "- Prioriza cumplir el objetivo de proteína si le falta proteína.\n"
+        "- Usa lenguaje cercano, motivador, en español claro con ingredientes accesibles.\n"
+        "- Devuelve EXCLUSIVAMENTE un JSON con las siguientes claves exactas:\n"
+        "  - advice: string (consejo de 1 a 3 oraciones sobre cómo cerrar el día según sus números restantes)\n"
+        "  - suggestions: array de 2 o 3 opciones recomendadas. Cada opción debe ser un objeto con:\n"
+        "    * title: string (nombre atractivo del plato o colación)\n"
+        "    * description: string (ingredientes con cantidades aproximadas y cómo prepararlo rápido)\n"
+        "    * meal_type: string (uno de: 'desayuno', 'almuerzo', 'merienda', 'cena', 'snack')\n"
+        "    * grams: int (peso total aproximado de la porción en gramos)\n"
+        "    * calories: int (calorías totales estimadas)\n"
+        "    * protein: int (gramos de proteína)\n"
+        "    * carbs: int (gramos de carbohidratos)\n"
+        "    * fat: int (gramos de grasa)\n"
+        "    * why_fit: string (frase corta explicando por qué es ideal para sus calorías/macros restantes)"
+    )
+
+    rem_cal_int = int(round(float(remaining_calories)))
+    prompt = (
+        f"Estado nutricional del usuario hoy:\n"
+        f"- Objetivo calórico diario: {int(round(float(target_calories)))} kcal\n"
+        f"- Calorías restantes disponibles: {rem_cal_int} kcal\n"
+        f"- Proteína restante recomendada: {int(round(float(remaining_protein)))} g\n"
+        f"- Carbohidratos restantes recomendados: {int(round(float(remaining_carbs)))} g\n"
+        f"- Grasas restantes recomendadas: {int(round(float(remaining_fat)))} g\n"
+        f"- Momento del día seleccionado: {meal_type}\n"
+    )
+    if user_query and user_query.strip():
+        prompt += f"\nPregunta o preferencia del usuario: \"{user_query.strip()}\"\n"
+    else:
+        prompt += f"\nEl usuario quiere saber qué puede comer en {meal_type} para acercarse a completar sus {rem_cal_int} kcal restantes sin excederse."
+
+    res = call_gemini_api(prompt=prompt, system_instruction=system_instruction, temperature=0.4)
+    if "error" in res:
+        return res
+
+    data = res["data"]
+    if isinstance(data, list) and len(data) > 0:
+        data = data[0]
+
+    raw_suggestions = data.get("suggestions", [])
+    normalized_suggestions = []
+    for s in raw_suggestions:
+        m_type = str(s.get("meal_type", meal_type)).lower()
+        if m_type not in ['desayuno', 'almuerzo', 'merienda', 'cena', 'snack']:
+            m_type = meal_type
+        normalized_suggestions.append({
+            "title": str(s.get("title", "Opción saludable")).strip(),
+            "description": str(s.get("description", "")).strip(),
+            "meal_type": m_type,
+            "grams": max(10, int(round(float(s.get("grams", 150))))),
+            "calories": max(0, int(round(float(s.get("calories", 0))))),
+            "protein": max(0, int(round(float(s.get("protein", 0))))),
+            "carbs": max(0, int(round(float(s.get("carbs", 0))))),
+            "fat": max(0, int(round(float(s.get("fat", 0))))),
+            "why_fit": str(s.get("why_fit", "")).strip(),
+        })
+
+    return {
+        "success": True,
+        "advice": str(data.get("advice", "")).strip(),
+        "suggestions": normalized_suggestions,
+        "model": res.get("model")
+    }

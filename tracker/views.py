@@ -231,8 +231,11 @@ def dashboard_view(request):
     maintenance_cal = profile.maintenance_calories or 2300
     deficit_target = max(0, maintenance_cal - calorie_target)
     
-    # Calories remaining to reach deficit target
+    # Calories and macros remaining to reach target
     remaining_calories = calorie_target - total_calories
+    remaining_protein = max(Decimal('0.0'), Decimal(str(profile.protein_target or 140)) - total_protein)
+    remaining_carbs = max(Decimal('0.0'), Decimal(str(profile.carbs_target or 160)) - total_carbs)
+    remaining_fat = max(Decimal('0.0'), Decimal(str(profile.fat_target or 55)) - total_fat)
     
     # Real deficit achieved today compared to maintenance
     actual_deficit = maintenance_cal - total_calories
@@ -364,6 +367,9 @@ def dashboard_view(request):
         'total_carbs': round(total_carbs, 1),
         'total_fat': round(total_fat, 1),
         'remaining_calories': round(remaining_calories, 1),
+        'remaining_protein': round(remaining_protein, 1),
+        'remaining_carbs': round(remaining_carbs, 1),
+        'remaining_fat': round(remaining_fat, 1),
         'actual_deficit': round(actual_deficit, 1),
         'deficit_target': deficit_target,
         'cal_percentage': cal_percentage,
@@ -566,13 +572,20 @@ def api_quick_add_meal(request):
             ).first()
             if not food_obj:
                 cal_val = Decimal(str(calories or 100))
+                prot_val = Decimal(str(body.get('protein', 4.0)))
+                carbs_val = Decimal(str(body.get('carbs', 15.0)))
+                fat_val = Decimal(str(body.get('fat', 2.0)))
+                if body.get('is_portion_totals') and grams > 0:
+                    factor = Decimal('100.0') / grams
+                else:
+                    factor = Decimal('1.0')
                 food_obj = FoodItem.objects.create(
                     user=request.user,
                     name=name.strip(),
-                    calories=cal_val,
-                    protein=Decimal('4.0'),
-                    carbs=Decimal('15.0'),
-                    fat=Decimal('2.0'),
+                    calories=round(cal_val * factor, 1),
+                    protein=round(prot_val * factor, 2),
+                    carbs=round(carbs_val * factor, 2),
+                    fat=round(fat_val * factor, 2),
                     serving_size=Decimal('100.0')
                 )
         else:
@@ -854,6 +867,69 @@ def ai_calculate_deficit_view(request):
         return JsonResponse(res)
     except Exception as e:
         return JsonResponse({"error": f"Error: {str(e)}"}, status=500)
+
+
+@login_required
+def ai_suggest_meal_view(request):
+    """Sugiere qué comer para completar o acercarse al objetivo calórico/macros del día usando Gemini"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    import json
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body.decode('utf-8'))
+        else:
+            data = request.POST
+
+        query = data.get('query', '').strip()
+        meal_type = data.get('meal_type', 'cena').lower()
+        date_str = data.get('date')
+
+        target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        target_cals = float(profile.calorie_target or 1800)
+        target_prot = float(profile.protein_target or 140)
+        target_carbs = float(profile.carbs_target or 160)
+        target_fat = float(profile.fat_target or 55)
+
+        today_entries = MealEntry.objects.filter(user=request.user, date=target_date)
+        total_cal = float(sum(e.total_calories for e in today_entries))
+        total_prot = float(sum(e.total_protein for e in today_entries))
+        total_carbs = float(sum(e.total_carbs for e in today_entries))
+        total_fat = float(sum(e.total_fat for e in today_entries))
+
+        rem_cals = target_cals - total_cal
+        rem_prot = max(0.0, target_prot - total_prot)
+        rem_carbs = max(0.0, target_carbs - total_carbs)
+        rem_fat = max(0.0, target_fat - total_fat)
+
+        from .gemini_service import suggest_meal_with_gemini
+        result = suggest_meal_with_gemini(
+            user_query=query,
+            remaining_calories=rem_cals,
+            remaining_protein=rem_prot,
+            remaining_carbs=rem_carbs,
+            remaining_fat=rem_fat,
+            target_calories=target_cals,
+            meal_type=meal_type
+        )
+
+        if "error" in result:
+            return JsonResponse({"error": result["error"]}, status=500)
+
+        result["remaining_calories"] = int(round(rem_cals))
+        result["remaining_protein"] = int(round(rem_prot))
+        result["remaining_carbs"] = int(round(rem_carbs))
+        result["remaining_fat"] = int(round(rem_fat))
+        result["consumed_calories"] = int(round(total_cal))
+        result["target_calories"] = int(round(target_cals))
+
+        return JsonResponse(result)
+    except Exception as e:
+        logger.exception("Error en ai_suggest_meal_view")
+        return JsonResponse({"error": f"Error al consultar con IA: {str(e)}"}, status=500)
 
 
 def manifest_view(request):

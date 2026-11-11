@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/ai/parse-meal/', views.ai_parse_meal_view, name='ai_parse_meal'),
     path('api/ai/estimate-food/', views.ai_estimate_food_view, name='ai_estimate_food'),
     path('api/ai/calculate-deficit/', views.ai_calculate_deficit_view, name='ai_calculate_deficit'),
+    path('api/ai/suggest-meal/', views.ai_suggest_meal_view, name='ai_suggest_meal'),
     path('manifest.json', views.manifest_view, name='manifest'),
     path('sw.js', views.service_worker_view, name='service_worker'),
     path('.well-known/assetlinks.json', views.assetlinks_view, name='assetlinks'),
