@@ -344,3 +344,33 @@ class PolishAndPasskeyTests(TestCase):
         self.assertIn('authenticatorSelection', reg_payload)
         self.assertEqual(reg_payload['authenticatorSelection'].get('userVerification'), 'preferred')
 
+    def test_dashboard_date_navigation_and_history(self):
+        from django.utils import timezone
+        import datetime
+
+        yesterday = timezone.localdate() - datetime.timedelta(days=1)
+        food = FoodItem.objects.create(
+            name='Salmón histórico',
+            calories=Decimal('210.0'),
+            protein=Decimal('22.0'),
+            carbs=Decimal('0.0'),
+            fat=Decimal('12.0'),
+        )
+        MealEntry.objects.create(
+            user=self.user,
+            food_item=food,
+            meal_type='cena',
+            date=yesterday,
+            grams_or_amount=Decimal('150.0'),
+        )
+        self.client.login(username='biouser', password='password123')
+        today_res = self.client.get(reverse('dashboard'))
+        self.assertContains(today_res, f'?date={yesterday.strftime("%Y-%m-%d")}')
+        self.assertContains(today_res, 'id="dashboardDatePicker"')
+
+        past_res = self.client.get(reverse('dashboard') + f'?date={yesterday.strftime("%Y-%m-%d")}')
+        self.assertEqual(past_res.status_code, 200)
+        self.assertContains(past_res, 'Salmón histórico')
+        self.assertContains(past_res, 'Volver a hoy')
+
+

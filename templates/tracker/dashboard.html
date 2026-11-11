@@ -532,15 +532,47 @@
 
     <!-- VIEW 1: HOY (DASHBOARD) -->
     <div id="viewToday" class="{% if active_tab == 'progreso' %}d-none{% endif %}">
+        <!-- Day / Date Selector Bar -->
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+            <div class="d-inline-flex align-items-center gap-1 rounded-pill" style="background: rgba(23,33,22,0.05); padding: 4px; border: 1px solid rgba(23,33,22,0.07);">
+                <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center text-decoration-none" style="width: 30px; height: 30px; background: #ffffff; color: #172116; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Día anterior" aria-label="Día anterior">
+                    <i class="fa-solid fa-chevron-left" style="font-size: 0.72rem;"></i>
+                </a>
+                <label for="dashboardDatePicker" class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-0" style="cursor: pointer; font-size: 0.82rem; font-weight: 800; color: #172116; user-select: none;" onclick="const p=document.getElementById('dashboardDatePicker'); if(p && p.showPicker){ try{p.showPicker();}catch(e){} }">
+                    <i class="fa-regular fa-calendar" style="color: #4e7110; font-size: 0.82rem;"></i>
+                    <span>{% if is_today %}Hoy · {{ selected_date|date:"d M" }}{% else %}{{ selected_date|date:"D d M" }}{% endif %}</span>
+                    <input type="date" id="dashboardDatePicker" value="{{ selected_date|date:'Y-m-d' }}" max="{% now 'Y-m-d' %}" style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;" onchange="if(this.value) window.location.href='?date=' + this.value;">
+                </label>
+                {% if is_today %}
+                    <span class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px; color: #a3afa0; cursor: default; opacity: 0.45;" aria-disabled="true" title="Ya estás en hoy">
+                        <i class="fa-solid fa-chevron-right" style="font-size: 0.72rem;"></i>
+                    </span>
+                {% else %}
+                    <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center text-decoration-none" style="width: 30px; height: 30px; background: #ffffff; color: #172116; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Día siguiente" aria-label="Día siguiente">
+                        <i class="fa-solid fa-chevron-right" style="font-size: 0.72rem;"></i>
+                    </a>
+                {% endif %}
+            </div>
+            {% if not is_today %}
+                <a href="{% url 'dashboard' %}" class="btn btn-sm rounded-pill fw-bold text-decoration-none" style="background: #b8f34a; color: #10150f; font-size: 0.76rem; padding: 6px 12px;">
+                    Volver a hoy
+                </a>
+            {% endif %}
+        </div>
+
         <!-- Greetings -->
         <div class="greeting-subhead">
-            {% now "H" as current_hour %}
-            {% if current_hour|add:0 < 12 %}Buenos días,{% elif current_hour|add:0 < 19 %}Buenas tardes,{% else %}Buenas noches,{% endif %} {{ user.first_name|default:user.username }}
+            {% if is_today %}
+                {% now "H" as current_hour %}
+                {% if current_hour|add:0 < 12 %}Buenos días,{% elif current_hour|add:0 < 19 %}Buenas tardes,{% else %}Buenas noches,{% endif %} {{ user.first_name|default:user.username }}
+            {% else %}
+                Historial del {{ selected_date|date:"d/m/Y" }}
+            {% endif %}
         </div>
-        <h1 class="greeting-title">Tu día, en balance.</h1>
+        <h1 class="greeting-title">{% if is_today %}Tu día, en balance.{% else %}Resumen de ese día.{% endif %}</h1>
         <div class="greeting-copy">
             {% if remaining_calories >= 0 %}
-                Te quedan <strong>{{ remaining_calories|floatformat:0 }} kcal</strong> para hoy
+                Te quedan <strong>{{ remaining_calories|floatformat:0 }} kcal</strong> {% if is_today %}para hoy{% else %}en ese día{% endif %}
             {% else %}
                 Superávit de <strong>{{ remaining_calories|stringformat:"+d"|slice:"1:" }} kcal</strong>
             {% endif %}
@@ -1040,6 +1072,29 @@
     <input type="file" id="nutraCameraInput" accept="image/*" capture="camera" class="d-none" onchange="handleNutraPhotoSelected(event)">
     <input type="file" id="nutraGalleryInput" accept="image/*" class="d-none" onchange="handleNutraPhotoSelected(event)">
 
+    <!-- Inline Assistant Photo Preview & Input / Loading area (pinned above cards for instant visibility) -->
+    <div id="nutraAiActiveBox" class="d-none mb-3 p-3 rounded-4" style="background: rgba(23,33,22,0.04); border: 1.5px solid #cde986;">
+        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-3 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+            <img id="nutraPhotoImg" src="" style="width: 56px; height: 56px; object-fit: cover; border-radius: 12px;">
+            <div class="flex-grow-1 overflow-hidden" style="font-size: 0.82rem;">
+                <strong id="nutraPhotoName" class="d-block text-truncate text-dark">Foto del plato</strong>
+                <span class="text-success small fw-semibold"><i class="fa-solid fa-check me-1"></i>Lista para análisis visual</span>
+            </div>
+            <button type="button" class="btn btn-sm text-danger p-1" onclick="clearNutraPhoto()" title="Quitar foto"><i class="fa-solid fa-trash"></i></button>
+        </div>
+
+        <div class="nutra-pill-input-wrap">
+            <input type="text" id="nutraAiInput" placeholder="Ej: bowl de pollo con arroz..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
+            <button type="button" id="btnSubmitNutraAi" class="nutra-pill-submit" onclick="submitNutraAssistant()">
+                <span>Analizar</span>
+            </button>
+        </div>
+        <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success fw-semibold">
+            <div class="spinner-border spinner-border-sm me-2"></div>
+            <span>Gemini IA calculando porciones y calorías...</span>
+        </div>
+    </div>
+
     <!-- Option 1: Sacar Foto (Direct In-App Camera) -->
     <button type="button" class="assistant-card-btn" onclick="triggerNutraCamera()">
         <div class="assistant-icon-box">
@@ -1099,29 +1154,6 @@
             <small style="color: #53634e; font-size: 0.8rem; display: block; line-height: 1.35;">Pedile ideas para completar tus {{ remaining_calories|floatformat:0 }} kcal restantes</small>
         </div>
     </button>
-
-    <!-- Inline Assistant Input / Loading area -->
-    <div id="nutraAiActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: rgba(23,33,22,0.03); border: 1px solid rgba(23,33,22,0.08);">
-        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-3 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
-            <img id="nutraPhotoImg" src="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 10px;">
-            <div class="flex-grow-1 overflow-hidden" style="font-size: 0.8rem;">
-                <strong id="nutraPhotoName" class="d-block text-truncate text-dark">Foto del plato</strong>
-                <span class="text-success small"><i class="fa-solid fa-check me-1"></i>Lista para análisis visual</span>
-            </div>
-            <button type="button" class="btn btn-sm text-danger p-1" onclick="clearNutraPhoto()"><i class="fa-solid fa-trash"></i></button>
-        </div>
-
-        <div class="nutra-pill-input-wrap">
-            <input type="text" id="nutraAiInput" placeholder="Ej: bowl de pollo con arroz..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
-            <button type="button" id="btnSubmitNutraAi" class="nutra-pill-submit" onclick="submitNutraAssistant()">
-                <span>Analizar</span>
-            </button>
-        </div>
-        <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success fw-semibold">
-            <div class="spinner-border spinner-border-sm me-2"></div>
-            <span>Gemini IA calculando porciones y calorías...</span>
-        </div>
-    </div>
 
     <!-- Inline Food Advisor / Consultation Section -->
     <div id="nutraAdvisorActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: #fbfcf8; border: 1.5px solid rgba(23,33,22,0.12);">
@@ -1286,18 +1318,21 @@
     let userManuallyPickedAssistantMeal = false;
     const NUTRA_SHEET_IDS = ['mealDetailSheet', 'quickAddSheet', 'assistantSheet'];
     let isClosingViaPopstate = false;
-    let ignoreNextPopstate = false;
+    let ignorePopstateCount = 0;
+    const popInFlight = {};
     let weightModalInstance = null;
 
     function pushModalHistory(modalId) {
+        popInFlight[modalId] = false;
         if (!history.state || history.state.nutraModal !== modalId) {
             history.pushState({ nutraModal: modalId }, '');
         }
     }
 
     function popModalHistoryIfActive(modalId) {
-        if (!isClosingViaPopstate && history.state && history.state.nutraModal === modalId) {
-            ignoreNextPopstate = true;
+        if (!isClosingViaPopstate && !popInFlight[modalId] && history.state && history.state.nutraModal === modalId) {
+            popInFlight[modalId] = true;
+            ignorePopstateCount++;
             history.back();
         }
     }
@@ -1310,11 +1345,15 @@
             cameraStream = null;
         }
         if (fromPopstate) isClosingViaPopstate = true;
-        if (dlg.open) dlg.close();
+        const wasOpen = dlg.open;
+        if (wasOpen) {
+            // dlg.close() fires the native 'close' listener which syncs modal history once.
+            dlg.close();
+        } else if (!fromPopstate) {
+            popModalHistoryIfActive(id);
+        }
         if (fromPopstate) {
             isClosingViaPopstate = false;
-        } else {
-            popModalHistoryIfActive(id);
         }
     }
 
@@ -1372,8 +1411,9 @@
     });
 
     window.addEventListener('popstate', () => {
-        if (ignoreNextPopstate) {
-            ignoreNextPopstate = false;
+        Object.keys(popInFlight).forEach(k => { popInFlight[k] = false; });
+        if (ignorePopstateCount > 0) {
+            ignorePopstateCount--;
             return;
         }
         const camDlg = document.getElementById('cameraViewfinderModal');
@@ -1690,7 +1730,8 @@
     }
 
     function triggerNutraGallery() {
-        closeCameraViewfinder();
+        const camDlg = document.getElementById('cameraViewfinderModal');
+        if (camDlg && camDlg.open) closeCameraViewfinder();
         const input = document.getElementById('nutraGalleryInput');
         if (input) input.click();
     }
@@ -1727,13 +1768,13 @@
         document.getElementById('nutraPhotoName').innerText = 'Foto de cámara (' + activeAssistantMealType.toUpperCase() + ')';
         document.getElementById('nutraPhotoPreviewBox').classList.remove('d-none');
         document.getElementById('nutraPhotoPreviewBox').classList.add('d-flex');
-        showNutraTextInput();
+        showNutraTextInput(false);
         document.getElementById('nutraAiInput').placeholder = 'Agrega detalles opcionales o presiona Analizar...';
-        document.getElementById('nutraAiInput').focus();
     }
 
     function fallbackToFilePicker() {
-        closeCameraViewfinder();
+        const camDlg = document.getElementById('cameraViewfinderModal');
+        if (camDlg && camDlg.open) closeCameraViewfinder();
         const input = document.getElementById('nutraCameraInput');
         if (input) input.click();
     }
@@ -1753,9 +1794,8 @@
             document.getElementById('nutraPhotoName').innerText = file.name || 'Foto del plato';
             document.getElementById('nutraPhotoPreviewBox').classList.remove('d-none');
             document.getElementById('nutraPhotoPreviewBox').classList.add('d-flex');
-            showNutraTextInput();
+            showNutraTextInput(false);
             document.getElementById('nutraAiInput').placeholder = 'Agrega detalles opcionales o presiona Analizar...';
-            document.getElementById('nutraAiInput').focus();
         };
         reader.readAsDataURL(file);
     }
@@ -1768,11 +1808,20 @@
         document.getElementById('nutraPhotoPreviewBox').classList.remove('d-flex');
     }
 
-    function showNutraTextInput() {
+    function showNutraTextInput(focusInput = true) {
         const advBox = document.getElementById('nutraAdvisorActiveBox');
         if (advBox) advBox.classList.add('d-none');
-        document.getElementById('nutraAiActiveBox').classList.remove('d-none');
-        document.getElementById('nutraAiInput').focus();
+        const aiBox = document.getElementById('nutraAiActiveBox');
+        if (aiBox) {
+            aiBox.classList.remove('d-none');
+            const sheet = document.getElementById('assistantSheet');
+            if (sheet) sheet.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => {
+                aiBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 60);
+        }
+        const inp = document.getElementById('nutraAiInput');
+        if (inp && focusInput) inp.focus({ preventScroll: true });
     }
 
     // Audio Speech Recognition
@@ -1849,6 +1898,7 @@
                     image_b64: nutraPhotoB64,
                     image_mime_type: nutraPhotoMime,
                     meal_type: activeAssistantMealType,
+                    date: '{{ selected_date|date:"Y-m-d" }}',
                     auto_save: true
                 })
             });
