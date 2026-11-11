@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load l10n %}
+{% load l10n static %}
 
 {% block title %}Mi Perfil | NÜTRA{% endblock %}
 
@@ -276,7 +276,7 @@
             <span class="d-block text-truncate" style="font-size: 0.82rem; color: #879482;">
                 {{ user.email|default:user.username }}
             </span>
-            <span class="badge mt-1 px-2.5 py-1 rounded-pill" style="background: #e7f7c8; color: #43630f; font-weight: 800; font-size: 0.7rem;">
+            <span class="badge mt-1 px-3 py-1 rounded-pill" style="background: #e7f7c8; color: #43630f; font-weight: 800; font-size: 0.7rem;">
                 PLAN ACTIVO • NÜTRA
             </span>
         </div>
@@ -369,7 +369,7 @@
                 <h3 style="font-size: 1.15rem; font-weight: 800; color: #172116; margin: 0;">
                     Objetivos calóricos
                 </h3>
-                <button type="button" class="btn btn-sm px-2.5 py-1 rounded-pill fw-bold" style="background: #e7f7c8; color: #172116; font-size: 0.78rem;" onclick="recalculateProfileAi()">
+                <button type="button" class="btn btn-sm px-3 py-1 rounded-pill fw-bold" style="background: #e7f7c8; color: #172116; font-size: 0.78rem;" onclick="recalculateProfileAi()">
                     <i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i> Recalcular con IA
                 </button>
             </div>
@@ -424,6 +424,50 @@
         </button>
     </form>
 
+    <!-- Passkey / Biometric Fingerprint Card -->
+    <div class="profile-card-white">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h4 class="m-0" style="font-size: 1rem; font-weight: 800; color: #172116;">
+                <i class="fa-solid fa-fingerprint me-2" style="color: #4e7110;"></i>Huella digital / Passkey
+            </h4>
+            <span class="badge rounded-pill px-2 py-1" style="background: #e7f7c8; color: #36500a; font-size: 0.68rem; font-weight: 800;">
+                SIN CONTRASEÑA
+            </span>
+        </div>
+        <p style="font-size: 0.84rem; color: #6d7b68; margin-bottom: 14px; line-height: 1.45;">
+            Activá el desbloqueo con la huella digital o biometría de tu celular para entrar en un toque.
+        </p>
+
+        <div id="passkeyRegAlert" class="alert small rounded-4 py-2 px-3 d-none mb-3"></div>
+
+        {% if passkeys %}
+        <div class="d-flex flex-column gap-2 mb-3">
+            {% for pk in passkeys %}
+            <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #f6f7f2; border: 1px solid rgba(23,33,22,0.08);">
+                <div class="overflow-hidden pe-2">
+                    <strong class="d-block text-truncate" style="font-size: 0.9rem; color: #172116;">{{ pk.name }}</strong>
+                    <span style="font-size: 0.75rem; color: #879482;">Registrada el {{ pk.created_at|date:"d/m/Y" }}</span>
+                </div>
+                <form method="post" action="{% url 'passkey_delete' pk.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta huella de tu cuenta?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm rounded-circle text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none;" title="Eliminar passkey">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <button type="button" id="btnRegisterPasskey" class="btn-pill-dark" style="background: #172116;">
+            <i class="fa-solid fa-fingerprint" style="color: #b8f34a;"></i>
+            <span id="btnRegisterPasskeyText">Activar huella de este dispositivo</span>
+        </button>
+        <p id="passkeyUnsupportedMsg" class="d-none small text-muted mt-2 mb-0 text-center">
+            Tu navegador o conexión actual no admite registro biométrico (requiere HTTPS y compatibilidad con Passkeys).
+        </p>
+    </div>
+
     <!-- Additional Options Card -->
     <div class="profile-card-white">
         <h4 style="font-size: 1rem; font-weight: 800; color: #172116; margin-bottom: 8px;">
@@ -441,7 +485,7 @@
 
         <form action="{% url 'logout' %}" method="post">
             {% csrf_token %}
-            <button type="submit" class="btn btn-outline-danger w-100 py-2.5 rounded-pill fw-bold" style="font-size: 0.9rem;">
+            <button type="submit" class="btn btn-outline-danger w-100 py-2 rounded-pill fw-bold" style="font-size: 0.9rem;">
                 <i class="fa-solid fa-right-from-bracket me-2"></i> Cerrar sesión
             </button>
         </form>
@@ -546,5 +590,138 @@
             spinner.classList.add('d-none');
         }
     }
+</script>
+
+<script type="module">
+    import "{% static 'js/webauthn-polyfills.mjs' %}";
+
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const REG_OPTIONS_URL = '{% url "passkey_register_options" %}';
+    const REG_VERIFY_URL = '{% url "passkey_register_verify" %}';
+
+    function setRegMessage(msg, type = 'success') {
+        const box = document.getElementById('passkeyRegAlert');
+        if (!box) return;
+        box.className = `alert alert-${type} small rounded-4 py-2 px-3 mb-3`;
+        box.innerText = msg;
+        box.classList.remove('d-none');
+    }
+
+    function guessDeviceName() {
+        const ua = navigator.userAgent || '';
+        if (/Android/i.test(ua)) return 'Huella Android';
+        if (/iPhone|iPad/i.test(ua)) return 'Face ID / Touch ID iOS';
+        if (/Windows/i.test(ua)) return 'Windows Hello';
+        if (/Mac/i.test(ua)) return 'Touch ID Mac';
+        return 'Huella del dispositivo';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const btn = document.getElementById('btnRegisterPasskey');
+        const btnText = document.getElementById('btnRegisterPasskeyText');
+        const unsupported = document.getElementById('passkeyUnsupportedMsg');
+
+        if (!btn) return;
+
+        if (!window.PublicKeyCredential || !window.isSecureContext) {
+            btn.disabled = true;
+            if (unsupported) unsupported.classList.remove('d-none');
+            return;
+        }
+
+        try {
+            if (PublicKeyCredential.getClientCapabilities) {
+                const caps = await PublicKeyCredential.getClientCapabilities();
+                if (!caps.passkeyPlatformAuthenticator && !caps.userVerifyingPlatformAuthenticator && !caps.conditionalGet) {
+                    btn.disabled = true;
+                    if (unsupported) unsupported.classList.remove('d-none');
+                }
+            }
+        } catch (e) {
+            console.warn('Capability check failed:', e);
+        }
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            if (btnText) btnText.innerText = 'Confirmá tu huella en el celular...';
+
+            let publicKey;
+            try {
+                const optResp = await fetch(REG_OPTIONS_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN
+                    },
+                    body: JSON.stringify({ promotion: false })
+                });
+                const optionsJSON = await optResp.json();
+                publicKey = PublicKeyCredential.parseCreationOptionsFromJSON(optionsJSON);
+            } catch (optErr) {
+                setRegMessage('No se pudieron iniciar las opciones biométricas.', 'danger');
+                btn.disabled = false;
+                if (btnText) btnText.innerText = 'Activar huella de este dispositivo';
+                return;
+            }
+
+            let credential;
+            try {
+                credential = await navigator.credentials.create({ publicKey });
+            } catch (err) {
+                if (err.name === 'InvalidStateError') {
+                    setRegMessage('Este dispositivo ya tiene una huella registrada para esta cuenta.', 'warning');
+                } else if (err.name === 'SecurityError') {
+                    setRegMessage('Error de origen seguro (HTTPS requerido para Passkeys).', 'danger');
+                } else if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
+                    setRegMessage('Registro de huella cancelado.', 'secondary');
+                } else {
+                    setRegMessage('No se pudo activar la huella: ' + (err.message || err.name), 'danger');
+                }
+                btn.disabled = false;
+                if (btnText) btnText.innerText = 'Activar huella de este dispositivo';
+                return;
+            }
+
+            const encodedResponse = credential.toJSON();
+            try {
+                const verifyResp = await fetch(REG_VERIFY_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN
+                    },
+                    body: JSON.stringify({
+                        credential: encodedResponse,
+                        name: guessDeviceName()
+                    })
+                });
+                if (!verifyResp.ok) {
+                    if (PublicKeyCredential.signalUnknownCredential) {
+                        await PublicKeyCredential.signalUnknownCredential({
+                            rpId: publicKey.rp.id,
+                            credentialId: encodedResponse.id
+                        });
+                    }
+                    const errBody = await verifyResp.json().catch(() => ({}));
+                    setRegMessage(errBody.error || 'El servidor no pudo verificar la credencial.', 'danger');
+                } else {
+                    setRegMessage('¡Huella activada! Ya podés ingresar sin contraseña desde el login.', 'success');
+                    setTimeout(() => window.location.reload(), 900);
+                }
+            } catch (serverErr) {
+                console.error('Server passkey verify network failure:', serverErr);
+                if (PublicKeyCredential.signalUnknownCredential) {
+                    await PublicKeyCredential.signalUnknownCredential({
+                        rpId: publicKey.rp.id,
+                        credentialId: encodedResponse.id
+                    });
+                }
+                setRegMessage('Error de conexión al guardar la huella.', 'danger');
+            } finally {
+                btn.disabled = false;
+                if (btnText) btnText.innerText = 'Activar huella de este dispositivo';
+            }
+        });
+    });
 </script>
 {% endblock %}

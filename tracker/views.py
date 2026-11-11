@@ -15,7 +15,7 @@ from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Q
-from .models import UserProfile, FoodItem, MealEntry, WeightLog
+from .models import UserProfile, FoodItem, MealEntry, WeightLog, PasskeyCredential
 from .forms import UserProfileForm, FoodItemForm, MealEntryForm, WeightLogForm, RegisterForm
 from .gemini_service import parse_meal_with_gemini, estimate_food_nutrition_with_gemini, calculate_deficit_with_gemini
 
@@ -628,6 +628,7 @@ def profile_settings_view(request):
     context = {
         'form': form,
         'profile': profile,
+        'passkeys': request.user.passkeys.all(),
         'height_val': str(int(round(float(profile.height or 168)))),
         'current_weight_val': f"{float(profile.current_weight if profile.current_weight is not None else 72.0):.1f}",
         'target_weight_val': f"{float(profile.target_weight if profile.target_weight is not None else 64.0):.1f}",
@@ -1277,4 +1278,229 @@ self.addEventListener('fetch', (event) => {
     response = HttpResponse(sw_code, content_type='application/javascript; charset=utf-8')
     response['Service-Worker-Allowed'] = '/'
     return response
+
+
+# ==============================================================================
+# WebAuthn / Passkeys (Autenticación Biométrica / Huella Digital)
+# ==============================================================================
+
+def _get_webauthn_rp_and_origins(request):
+    """Determina RP ID y orígenes válidos para WebAuthn sin depender de window.location."""
+    raw_host = request.get_host()
+    hostname = raw_host.split(':')[0].lower()
+    rp_id = os.environ.get('WEBAUTHN_RP_ID') or (
+        'dieta.dario10.pw' if hostname.endswith('dieta.dario10.pw') else hostname
+    )
+    is_https = request.is_secure() or request.META.get('HTTP_X_FORWARDED_PROTO') == 'https'
+    scheme = 'https' if is_https else request.scheme
+    origins = [f"{scheme}://{raw_host}"]
+    if hostname == 'dieta.dario10.pw' and f"https://{hostname}" not in origins:
+        origins.append(f"https://{hostname}")
+    return rp_id, origins
+
+
+def _get_or_create_passkey_user_handle(profile):
+    """Obtiene o genera un identificador opaco estable para el usuario en WebAuthn."""
+    from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
+    if not profile.passkey_user_handle:
+        profile.passkey_user_handle = bytes_to_base64url(os.urandom(32))
+        profile.save(update_fields=['passkey_user_handle'])
+    return base64url_to_bytes(profile.passkey_user_handle)
+
+
+@login_required
+def passkey_register_options_view(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    import json
+    from webauthn import generate_registration_options, options_to_json
+    from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
+    from webauthn.helpers.structs import (
+        AuthenticatorSelectionCriteria,
+        AuthenticatorAttachment,
+        PublicKeyCredentialDescriptor,
+        AuthenticatorTransport,
+        ResidentKeyRequirement,
+        UserVerificationRequirement,
+    )
+
+    try:
+        body = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        body = {}
+
+    is_promotion = bool(body.get('promotion', True))
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    user_handle = _get_or_create_passkey_user_handle(profile)
+    rp_id, _ = _get_webauthn_rp_and_origins(request)
+
+    exclude_creds = []
+    for cred in request.user.passkeys.all():
+        transports = []
+        for t in (cred.transports or []):
+            try:
+                transports.append(AuthenticatorTransport(t))
+            except ValueError:
+                pass
+        exclude_creds.append(
+            PublicKeyCredentialDescriptor(
+                id=base64url_to_bytes(cred.credential_id),
+                transports=transports or None,
+            )
+        )
+
+    selection_kwargs = {
+        "resident_key": ResidentKeyRequirement.REQUIRED,
+        "require_resident_key": True,
+        "user_verification": UserVerificationRequirement.PREFERRED,
+    }
+    if is_promotion:
+        selection_kwargs["authenticator_attachment"] = AuthenticatorAttachment.PLATFORM
+
+    options = generate_registration_options(
+        rp_id=rp_id,
+        rp_name="NÜTRA • Déficit Calórico",
+        user_id=user_handle,
+        user_name=request.user.username,
+        user_display_name=request.user.first_name or request.user.username,
+        authenticator_selection=AuthenticatorSelectionCriteria(**selection_kwargs),
+        exclude_credentials=exclude_creds,
+    )
+
+    request.session['webauthn_reg_challenge'] = bytes_to_base64url(options.challenge)
+    request.session['webauthn_reg_expected_uv'] = UserVerificationRequirement.PREFERRED.value
+    return HttpResponse(options_to_json(options), content_type='application/json')
+
+
+@login_required
+def passkey_register_verify_view(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    import json
+    from webauthn import verify_registration_response
+    from webauthn.helpers import bytes_to_base64url, base64url_to_bytes
+
+    challenge_b64 = request.session.pop('webauthn_reg_challenge', None)
+    expected_uv = request.session.pop('webauthn_reg_expected_uv', 'preferred')
+    if not challenge_b64:
+        return JsonResponse({"error": "Sesión de registro biométrico expirada. Reintentá."}, status=400)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+        credential_payload = body.get('credential', body)
+        device_name = str(body.get('name', '')).strip()[:120] or 'Huella / Biometría del dispositivo'
+        rp_id, origins = _get_webauthn_rp_and_origins(request)
+
+        verified = verify_registration_response(
+            credential=credential_payload,
+            expected_challenge=base64url_to_bytes(challenge_b64),
+            expected_rp_id=rp_id,
+            expected_origin=origins,
+            require_user_presence=True,
+            require_user_verification=(expected_uv == 'required'),
+        )
+
+        cred_id_b64 = bytes_to_base64url(verified.credential_id)
+        pub_key_b64 = bytes_to_base64url(verified.credential_public_key)
+        transports = []
+        if isinstance(credential_payload, dict):
+            resp_obj = credential_payload.get('response') or {}
+            if isinstance(resp_obj.get('transports'), list):
+                transports = [str(t) for t in resp_obj.get('transports')]
+
+        cred_obj, _ = PasskeyCredential.objects.update_or_create(
+            credential_id=cred_id_b64,
+            defaults={
+                'user': request.user,
+                'public_key': pub_key_b64,
+                'sign_count': verified.sign_count,
+                'transports': transports,
+                'credential_device_type': str(getattr(verified.credential_device_type, 'value', verified.credential_device_type)),
+                'credential_backed_up': bool(verified.credential_backed_up),
+                'aaguid': str(verified.aaguid or ''),
+                'name': device_name,
+            }
+        )
+        return JsonResponse({
+            "success": True,
+            "passkey": {
+                "id": cred_obj.id,
+                "name": cred_obj.name,
+                "created_at": cred_obj.created_at.strftime('%d/%m/%Y %H:%M'),
+            }
+        })
+    except Exception as err:
+        logger.warning(f"Error verificando registro passkey: {err}")
+        return JsonResponse({"error": f"No se pudo verificar la huella: {str(err)}"}, status=400)
+
+
+@login_required
+def passkey_delete_view(request, pk):
+    cred = get_object_or_404(PasskeyCredential, pk=pk, user=request.user)
+    if request.method == 'POST':
+        cred.delete()
+        messages.info(request, "Acceso biométrico eliminado de tu cuenta.")
+    return redirect('profile_settings')
+
+
+def passkey_auth_options_view(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    from webauthn import generate_authentication_options, options_to_json
+    from webauthn.helpers import bytes_to_base64url
+    from webauthn.helpers.structs import UserVerificationRequirement
+
+    rp_id, _ = _get_webauthn_rp_and_origins(request)
+    options = generate_authentication_options(
+        rp_id=rp_id,
+        allow_credentials=[],
+        user_verification=UserVerificationRequirement.PREFERRED,
+    )
+    request.session['webauthn_auth_challenge'] = bytes_to_base64url(options.challenge)
+    request.session['webauthn_auth_expected_uv'] = UserVerificationRequirement.PREFERRED.value
+    return HttpResponse(options_to_json(options), content_type='application/json')
+
+
+def passkey_auth_verify_view(request):
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    import json
+    from webauthn import verify_authentication_response
+    from webauthn.helpers import base64url_to_bytes
+
+    challenge_b64 = request.session.pop('webauthn_auth_challenge', None)
+    expected_uv = request.session.pop('webauthn_auth_expected_uv', 'preferred')
+    if not challenge_b64:
+        return JsonResponse({"error": "El desafío biométrico expiró. Reintentá."}, status=400)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+        credential_id = body.get('id', '')
+        cred_obj = PasskeyCredential.objects.select_related('user').filter(credential_id=credential_id).first()
+        if not cred_obj:
+            return JsonResponse({"error": "Esta huella o passkey ya no está registrada."}, status=404)
+
+        rp_id, origins = _get_webauthn_rp_and_origins(request)
+        verified = verify_authentication_response(
+            credential=body,
+            expected_challenge=base64url_to_bytes(challenge_b64),
+            expected_rp_id=rp_id,
+            expected_origin=origins,
+            credential_public_key=base64url_to_bytes(cred_obj.public_key),
+            credential_current_sign_count=cred_obj.sign_count,
+            require_user_verification=(expected_uv == 'required'),
+        )
+
+        cred_obj.sign_count = verified.new_sign_count
+        cred_obj.last_used_at = timezone.now()
+        cred_obj.save(update_fields=['sign_count', 'last_used_at'])
+
+        login(request, cred_obj.user, backend='django.contrib.auth.backends.ModelBackend')
+        return JsonResponse({
+            "success": True,
+            "redirect_url": reverse('dashboard'),
+        })
+    except Exception as err:
+        logger.warning(f"Error verificando login passkey: {err}")
+        return JsonResponse({"error": "No se pudo validar tu huella digital."}, status=400)
 

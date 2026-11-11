@@ -21,6 +21,12 @@ urlpatterns = [
     path('api/ai/estimate-food/', views.ai_estimate_food_view, name='ai_estimate_food'),
     path('api/ai/calculate-deficit/', views.ai_calculate_deficit_view, name='ai_calculate_deficit'),
     path('api/ai/suggest-meal/', views.ai_suggest_meal_view, name='ai_suggest_meal'),
+    # Passkeys / Autenticación biométrica (WebAuthn)
+    path('api/passkeys/register/options/', views.passkey_register_options_view, name='passkey_register_options'),
+    path('api/passkeys/register/verify/', views.passkey_register_verify_view, name='passkey_register_verify'),
+    path('api/passkeys/auth/options/', views.passkey_auth_options_view, name='passkey_auth_options'),
+    path('api/passkeys/auth/verify/', views.passkey_auth_verify_view, name='passkey_auth_verify'),
+    path('passkeys/delete/<int:pk>/', views.passkey_delete_view, name='passkey_delete'),
     path('manifest.json', views.manifest_view, name='manifest'),
     path('sw.js', views.service_worker_view, name='service_worker'),
     path('.well-known/assetlinks.json', views.assetlinks_view, name='assetlinks'),

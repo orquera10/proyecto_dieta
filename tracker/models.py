@@ -56,6 +56,7 @@ class UserProfile(models.Model):
     height = models.FloatField(null=True, blank=True, help_text="Altura en cm")
     activity_level = models.CharField(max_length=20, default='moderado', blank=True)
     deficit_rate = models.CharField(max_length=20, default='moderado', blank=True)
+    passkey_user_handle = models.CharField(max_length=64, blank=True, default='', verbose_name="WebAuthn User Handle")
 
     def planned_deficit(self):
         """Déficit calórico planificado por día"""
@@ -203,3 +204,25 @@ class WeightLog(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.user.username}: {self.weight} kg"
+
+
+class PasskeyCredential(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='passkeys')
+    credential_id = models.CharField(max_length=512, unique=True, verbose_name="Credential ID (Base64URL)")
+    public_key = models.TextField(verbose_name="Public Key (Base64URL)")
+    sign_count = models.BigIntegerField(default=0, verbose_name="Contador de firmas")
+    transports = models.JSONField(default=list, blank=True, verbose_name="Transportes")
+    credential_device_type = models.CharField(max_length=32, default='singleDevice')
+    credential_backed_up = models.BooleanField(default=False)
+    aaguid = models.CharField(max_length=64, blank=True, default='')
+    name = models.CharField(max_length=120, default='Huella / Passkey del dispositivo')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Passkey biométrica"
+        verbose_name_plural = "Passkeys biométricas"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"

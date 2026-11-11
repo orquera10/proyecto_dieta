@@ -281,38 +281,84 @@
     .dock-fab:active {
         transform: scale(0.92);
     }
-    /* Bottom Sheet Assistant Drawer */
-    .nutra-bottom-sheet {
+    /* Bottom Sheet Assistant Drawer (Native Top-Layer <dialog>) */
+    dialog.nutra-bottom-sheet {
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        inset: auto 0 0 0;
+        margin: auto auto 0 auto;
+        width: 100%;
+        max-width: 480px;
+        max-height: 90dvh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
         background: #fdfdfc;
+        color: #172116;
+        border: none;
         border-top-left-radius: 32px;
         border-top-right-radius: 32px;
         padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-        z-index: 1060;
-        max-width: 480px;
-        margin: 0 auto;
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
-        transform: translateY(105%);
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        outline: none;
     }
-    .nutra-bottom-sheet.open {
-        transform: translateY(0);
+    dialog.nutra-bottom-sheet:not([open]) {
+        display: none;
     }
-    .sheet-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1055;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.25s ease;
+    dialog.nutra-bottom-sheet[open] {
+        animation: nutraSheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .sheet-backdrop.open {
-        opacity: 1;
-        pointer-events: auto;
+    @keyframes nutraSheetSlideUp {
+        from { transform: translateY(28px); opacity: 0.7; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    dialog.nutra-bottom-sheet::backdrop {
+        background: rgba(0, 0, 0, 0.52);
+        overflow: hidden;
+        overscroll-behavior: contain;
+    }
+    .nutra-pill-input-wrap {
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border: 1.5px solid rgba(23, 33, 22, 0.14);
+        border-radius: 999px;
+        padding: 4px 4px 4px 14px;
+        gap: 8px;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .nutra-pill-input-wrap:focus-within {
+        border-color: #172116;
+        box-shadow: 0 0 0 3px rgba(184, 243, 74, 0.28);
+    }
+    .nutra-pill-input-wrap input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: #172116;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+    .nutra-pill-input-wrap input::placeholder {
+        color: #879482;
+        font-weight: 500;
+    }
+    .nutra-pill-submit {
+        border: none;
+        border-radius: 999px;
+        background: #172116;
+        color: #ffffff;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    .nutra-pill-submit:disabled {
+        opacity: 0.6;
     }
     .assistant-card-btn {
         background: #ffffff;
@@ -362,8 +408,8 @@
     /* Moment of the day selector pills */
     .meal-moment-pill, .assistant-moment-pill {
         border-radius: 999px;
-        padding: 8px 18px;
-        font-size: 0.85rem;
+        padding: 7px 14px;
+        font-size: 0.8rem;
         font-weight: 700;
         background: #ffffff;
         border: 1px solid rgba(23, 33, 22, 0.14);
@@ -397,15 +443,32 @@
         transform: scale(0.9);
         background: #b8f34a;
     }
-    /* Fullscreen camera viewfinder */
-    .nutra-camera-viewfinder {
+    /* Fullscreen camera viewfinder (<dialog>) */
+    dialog.nutra-camera-viewfinder {
         position: fixed;
         inset: 0;
+        width: 100vw;
+        height: 100dvh;
+        max-width: 100vw;
+        max-height: 100dvh;
+        margin: 0;
+        padding: 0;
+        border: none;
         background: #000000;
-        z-index: 2000;
+        overscroll-behavior: contain;
+    }
+    dialog.nutra-camera-viewfinder:not([open]) {
+        display: none;
+    }
+    dialog.nutra-camera-viewfinder[open] {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+    }
+    dialog.nutra-camera-viewfinder::backdrop {
+        background: #000000;
+        overflow: hidden;
+        overscroll-behavior: contain;
     }
     .camera-top-bar {
         position: absolute;
@@ -628,7 +691,7 @@
                 </svg>
                 <span>Abrir asistente</span>
             </button>
-            <button type="button" class="btn w-100 py-2.5 rounded-pill fw-bold mt-2 d-flex align-items-center justify-content-center gap-2" style="background: rgba(23,33,22,0.08); color: #172116; font-size: 0.88rem; border: none;" onclick="openFoodAdvisorModal()">
+            <button type="button" class="btn w-100 rounded-pill fw-bold mt-2 d-flex align-items-center justify-content-center gap-2" style="background: rgba(23,33,22,0.08); color: #172116; font-size: 0.88rem; border: none; padding: 11px 16px;" onclick="openFoodAdvisorModal()">
                 <i class="fa-regular fa-lightbulb"></i>
                 <span>¿Qué puedo comer para completar mis calorías?</span>
             </button>
@@ -795,11 +858,8 @@
     </a>
 </div>
 
-<!-- Bottom Sheet Backdrop -->
-<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeAllModals()"></div>
-
-<!-- BOTTOM SHEET 0: DETALLE DE COMIDA (Figma NÜTRA Exact Match) -->
-<div class="nutra-bottom-sheet" id="mealDetailSheet" style="max-height: 90vh; overflow-y: auto;">
+<!-- BOTTOM SHEET 0: DETALLE DE COMIDA (<dialog> nativo top-layer) -->
+<dialog class="nutra-bottom-sheet" id="mealDetailSheet" closedby="any">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div id="mealDetailBadge" style="width: 38px; height: 38px; background: #172116; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ffffff;">
             <i class="fa-solid fa-utensils fs-6"></i>
@@ -824,7 +884,7 @@
         <img id="mealDetailPhotoImg" src="" alt="Foto de comida" 
              onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';"
              style="width: 100%; height: 100%; object-fit: cover;">
-        <span id="mealDetailPhotoTag" class="position-absolute bottom-0 start-0 m-2 px-2.5 py-1 rounded-pill small fw-bold" style="background: rgba(23,33,22,0.75); color: #ffffff; font-size: 0.72rem; backdrop-filter: blur(4px);">
+        <span id="mealDetailPhotoTag" class="position-absolute bottom-0 start-0 m-2 px-3 py-1 rounded-pill small fw-bold" style="background: rgba(23,33,22,0.75); color: #ffffff; font-size: 0.72rem; backdrop-filter: blur(4px);">
             <i class="fa-solid fa-camera me-1"></i> Foto de tu plato
         </span>
     </div>
@@ -836,13 +896,13 @@
             <span id="mealDetailCals" style="font-size: 1.35rem; font-weight: 900; color: #172116;">0 kcal</span>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.78rem; font-weight: 700;">
-            <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(184, 243, 74, 0.2); color: #3b570e;">
+            <span class="badge rounded-pill px-3 py-1" style="background: rgba(184, 243, 74, 0.25); color: #3b570e;">
                 • Proteínas: <span id="mealDetailProt">0</span>g
             </span>
-            <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(245, 158, 11, 0.15); color: #b45309;">
+            <span class="badge rounded-pill px-3 py-1" style="background: rgba(245, 158, 11, 0.16); color: #b45309;">
                 • Carbos: <span id="mealDetailCarbs">0</span>g
             </span>
-            <span class="badge rounded-pill px-2.5 py-1" style="background: rgba(168, 85, 247, 0.15); color: #7e22ce;">
+            <span class="badge rounded-pill px-3 py-1" style="background: rgba(168, 85, 247, 0.16); color: #7e22ce;">
                 • Grasas: <span id="mealDetailFat">0</span>g
             </span>
         </div>
@@ -861,17 +921,17 @@
         <button type="button" class="btn w-100 py-3 rounded-4 fw-bold" style="background: #172116; color: #ffffff; font-size: 0.95rem;" onclick="addMoreToCurrentMeal()">
             <i class="fa-solid fa-plus me-1"></i> Agregar otro alimento a esta comida
         </button>
-        <button type="button" class="btn w-100 py-2.5 rounded-4 fw-bold" style="background: #e2f7a9; color: #213310; font-size: 0.9rem;" onclick="addMoreWithAiToCurrentMeal()">
+        <button type="button" class="btn w-100 rounded-4 fw-bold" style="background: #e2f7a9; color: #213310; font-size: 0.9rem; padding: 11px 16px;" onclick="addMoreWithAiToCurrentMeal()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#213310" class="me-1" style="vertical-align: -2px;">
                 <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
             </svg>
             Agregar con IA (foto / audio)
         </button>
     </div>
-</div>
+</dialog>
 
-<!-- BOTTOM SHEET 1: AGREGAR UNA COMIDA (Figma 100% Exact Match) -->
-<div class="nutra-bottom-sheet" id="quickAddSheet" style="max-height: 90vh; overflow-y: auto;">
+<!-- BOTTOM SHEET 1: AGREGAR UNA COMIDA (<dialog> nativo top-layer) -->
+<dialog class="nutra-bottom-sheet" id="quickAddSheet" closedby="any">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div style="width: 38px; height: 38px; background: #172116; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ffffff;">
             <i class="fa-solid fa-plus fs-6"></i>
@@ -889,7 +949,7 @@
     <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
         MOMENTO DEL DÍA
     </div>
-    <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 mb-3" style="scrollbar-width: none;">
+    <div class="d-flex align-items-center flex-wrap gap-2 pb-1 mb-3">
         <button type="button" class="meal-moment-pill" data-meal="desayuno" onclick="selectQuickAddMeal('desayuno')">Desayuno</button>
         <button type="button" class="meal-moment-pill active" data-meal="almuerzo" onclick="selectQuickAddMeal('almuerzo')">Almuerzo</button>
         <button type="button" class="meal-moment-pill" data-meal="merienda" onclick="selectQuickAddMeal('merienda')">Merienda</button>
@@ -945,10 +1005,10 @@
             Prefiero registrarlo con IA
         </button>
     </div>
-</div>
+</dialog>
 
-<!-- BOTTOM SHEET 2: ASISTENTE IA (¿Cómo querés registrarlo?) -->
-<div class="nutra-bottom-sheet" id="assistantSheet" style="max-height: 90vh; overflow-y: auto;">
+<!-- BOTTOM SHEET 2: ASISTENTE IA (<dialog> nativo top-layer) -->
+<dialog class="nutra-bottom-sheet" id="assistantSheet" closedby="any">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="nutra-logo-box">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
@@ -960,7 +1020,7 @@
         </button>
     </div>
 
-    <h2 style="font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 14px;">
+    <h2 style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 14px;">
         ¿Cómo querés registrarlo?
     </h2>
 
@@ -968,7 +1028,7 @@
     <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
         MOMENTO DEL DÍA
     </div>
-    <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 mb-3" style="scrollbar-width: none;">
+    <div class="d-flex align-items-center flex-wrap gap-2 pb-1 mb-3">
         <button type="button" class="assistant-moment-pill" data-meal="desayuno" onclick="selectAssistantMeal('desayuno', true)">Desayuno</button>
         <button type="button" class="assistant-moment-pill" data-meal="almuerzo" onclick="selectAssistantMeal('almuerzo', true)">Almuerzo</button>
         <button type="button" class="assistant-moment-pill" data-meal="merienda" onclick="selectAssistantMeal('merienda', true)">Merienda</button>
@@ -1027,23 +1087,23 @@
     </button>
 
     <!-- Option 5: Consultar qué comer para completar calorías -->
-    <button type="button" class="assistant-card-btn" style="background: #f6fae9; border: 1.5px solid #cde986;" onclick="showNutraAdvisor()">
+    <button type="button" class="assistant-card-btn" style="background: #f6fae9; border: 1.5px solid #cde986; margin-bottom: 4px;" onclick="showNutraAdvisor()">
         <div class="assistant-icon-box" style="background: #b8f34a; color: #172116;">
             <i class="fa-regular fa-lightbulb fs-5"></i>
         </div>
-        <div class="flex-grow-1">
-            <div class="d-flex align-items-center justify-content-between">
+        <div class="flex-grow-1" style="min-width: 0;">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                 <strong style="font-size: 0.95rem; color: #172116;">¿Qué puedo comer hoy?</strong>
-                <span class="badge rounded-pill" style="background: #172116; color: #b8f34a; font-size: 0.65rem; font-weight: 800;">CONSULTA IA</span>
+                <span class="badge rounded-pill flex-shrink-0" style="background: #172116; color: #b8f34a; font-size: 0.65rem; font-weight: 800; padding: 5px 9px;">CONSULTA IA</span>
             </div>
-            <small style="color: #53634e; font-size: 0.8rem;">Pedile ideas para completar tus {{ remaining_calories|floatformat:0 }} kcal restantes</small>
+            <small style="color: #53634e; font-size: 0.8rem; display: block; line-height: 1.35;">Pedile ideas para completar tus {{ remaining_calories|floatformat:0 }} kcal restantes</small>
         </div>
     </button>
 
     <!-- Inline Assistant Input / Loading area -->
     <div id="nutraAiActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: rgba(23,33,22,0.03); border: 1px solid rgba(23,33,22,0.08);">
-        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-2 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
-            <img id="nutraPhotoImg" src="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
+        <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-3 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+            <img id="nutraPhotoImg" src="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 10px;">
             <div class="flex-grow-1 overflow-hidden" style="font-size: 0.8rem;">
                 <strong id="nutraPhotoName" class="d-block text-truncate text-dark">Foto del plato</strong>
                 <span class="text-success small"><i class="fa-solid fa-check me-1"></i>Lista para análisis visual</span>
@@ -1051,13 +1111,13 @@
             <button type="button" class="btn btn-sm text-danger p-1" onclick="clearNutraPhoto()"><i class="fa-solid fa-trash"></i></button>
         </div>
 
-        <div class="input-group">
-            <input type="text" id="nutraAiInput" class="form-control rounded-start-pill border-end-0 py-2 px-3" placeholder="Ej: bowl de pollo con arroz integral..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
-            <button type="button" id="btnSubmitNutraAi" class="btn btn-dark rounded-end-pill px-4 fw-bold" onclick="submitNutraAssistant()">
+        <div class="nutra-pill-input-wrap">
+            <input type="text" id="nutraAiInput" placeholder="Ej: bowl de pollo con arroz..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
+            <button type="button" id="btnSubmitNutraAi" class="nutra-pill-submit" onclick="submitNutraAssistant()">
                 <span>Analizar</span>
             </button>
         </div>
-        <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success">
+        <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success fw-semibold">
             <div class="spinner-border spinner-border-sm me-2"></div>
             <span>Gemini IA calculando porciones y calorías...</span>
         </div>
@@ -1065,81 +1125,81 @@
 
     <!-- Inline Food Advisor / Consultation Section -->
     <div id="nutraAdvisorActiveBox" class="d-none mt-3 p-3 rounded-4" style="background: #fbfcf8; border: 1.5px solid rgba(23,33,22,0.12);">
-        <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center justify-content-between mb-3">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-regular fa-lightbulb" style="color: #4e7110;"></i>
-                <strong style="font-size: 0.92rem; color: #172116;">Consultar sobre comida</strong>
+                <strong style="font-size: 0.94rem; color: #172116;">Consultar sobre comida</strong>
             </div>
-            <button type="button" class="btn btn-sm p-0 text-muted" onclick="hideNutraAdvisor()">
+            <button type="button" class="btn btn-sm rounded-circle p-0 text-muted" style="width: 28px; height: 28px; background: rgba(23,33,22,0.05);" onclick="hideNutraAdvisor()">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
 
         <!-- Budget Pill Header -->
-        <div class="p-2.5 rounded-3 mb-3" style="background: #f0f4e8; border: 1px solid rgba(23,33,22,0.06);">
-            <div class="d-flex align-items-baseline justify-content-between mb-1">
+        <div class="rounded-4 mb-3" style="background: #eff5e3; border: 1px solid rgba(23,33,22,0.08); padding: 12px 14px;">
+            <div class="d-flex align-items-baseline justify-content-between mb-2">
                 <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6d7b68;">
                     {% if remaining_calories >= 0 %}TE QUEDAN HOY{% else %}SUPERÁVIT DE HOY{% endif %}
                 </span>
-                <strong style="font-size: 1rem; color: #172116; font-weight: 900;">
+                <strong style="font-size: 1.05rem; color: #172116; font-weight: 900;">
                     {% if remaining_calories >= 0 %}{{ remaining_calories|floatformat:0 }} kcal{% else %}+{{ remaining_calories|stringformat:"+d"|slice:"1:" }} kcal{% endif %}
                 </strong>
             </div>
-            <div class="d-flex align-items-center gap-1.5 flex-wrap" style="font-size: 0.72rem; font-weight: 700;">
-                <span class="badge rounded-pill" style="background: rgba(184, 243, 74, 0.35); color: #2d4508;">
+            <div class="d-flex align-items-center flex-wrap gap-2" style="font-size: 0.72rem; font-weight: 700;">
+                <span class="badge rounded-pill px-2 py-1" style="background: rgba(184, 243, 74, 0.35); color: #2d4508;">
                     P: {{ remaining_protein|floatformat:0 }}g rest.
                 </span>
-                <span class="badge rounded-pill" style="background: rgba(245, 158, 11, 0.18); color: #b45309;">
+                <span class="badge rounded-pill px-2 py-1" style="background: rgba(245, 158, 11, 0.18); color: #b45309;">
                     C: {{ remaining_carbs|floatformat:0 }}g rest.
                 </span>
-                <span class="badge rounded-pill" style="background: rgba(168, 85, 247, 0.16); color: #7e22ce;">
+                <span class="badge rounded-pill px-2 py-1" style="background: rgba(168, 85, 247, 0.16); color: #7e22ce;">
                     G: {{ remaining_fat|floatformat:0 }}g rest.
                 </span>
             </div>
         </div>
 
         <!-- Quick prompt chips -->
-        <div class="d-flex align-items-center gap-1.5 overflow-x-auto pb-2 mb-2.5" style="scrollbar-width: none;">
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('¿Qué puedo comer para completar mis calorías restantes?')">
+        <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+            <button type="button" class="btn btn-sm rounded-pill px-3 py-1" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.76rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('¿Qué puedo comer para completar mis calorías restantes?')">
                 ✨ Completar el día
             </button>
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('¿Qué puedo cenar liviano que encaje con mi déficit?')">
+            <button type="button" class="btn btn-sm rounded-pill px-3 py-1" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.76rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('¿Qué puedo cenar liviano que encaje con mi déficit?')">
                 🥗 Cena liviana
             </button>
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('Necesito un snack alto en proteína y bajo en calorías')">
+            <button type="button" class="btn btn-sm rounded-pill px-3 py-1" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.76rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('Necesito un snack alto en proteína y bajo en calorías')">
                 💪 Snack proteico
             </button>
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.75rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('Algo dulce para el antojo sin salir de mis calorías')">
+            <button type="button" class="btn btn-sm rounded-pill px-3 py-1" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.12); font-size: 0.76rem; color: #172116; font-weight: 700;" onclick="selectAdvisorChip('Algo dulce para el antojo sin salir de mis calorías')">
                 🍫 Antojo dulce
             </button>
         </div>
 
         <!-- Query Input -->
-        <div class="input-group mb-2">
-            <input type="text" id="nutraAdvisorInput" class="form-control rounded-start-pill border-end-0 py-2 px-3 bg-white text-dark" placeholder="Ej: ¿Qué ceno? o tengo huevos y atún..." style="font-size: 0.88rem; border-color: rgba(23,33,22,0.15);" onkeydown="if(event.key === 'Enter') submitNutraAdvisor()">
-            <button type="button" id="btnSubmitNutraAdvisor" class="btn btn-dark rounded-end-pill px-3.5 fw-bold" style="background: #172116; font-size: 0.88rem;" onclick="submitNutraAdvisor()">
+        <div class="nutra-pill-input-wrap mb-2">
+            <input type="text" id="nutraAdvisorInput" placeholder="Ej: ¿Qué ceno? o tengo huevos..." onkeydown="if(event.key === 'Enter') submitNutraAdvisor()">
+            <button type="button" id="btnSubmitNutraAdvisor" class="nutra-pill-submit" onclick="submitNutraAdvisor()">
                 <span>Consultar</span>
             </button>
         </div>
 
         <!-- Loading Spinner -->
-        <div id="nutraAdvisorSpinner" class="d-none text-center my-3 small text-success">
+        <div id="nutraAdvisorSpinner" class="d-none text-center my-3 small text-success fw-semibold">
             <div class="spinner-border spinner-border-sm me-2"></div>
             <span>Gemini IA buscando ideas para tu presupuesto calórico...</span>
         </div>
 
         <!-- Results Container -->
         <div id="nutraAdvisorResults" class="d-none mt-3">
-            <div id="nutraAdvisorAdvice" class="p-3 rounded-4 mb-3" style="background: #eef8d2; color: #1e3309; font-size: 0.85rem; line-height: 1.45; font-weight: 600;">
+            <div id="nutraAdvisorAdvice" class="p-3 rounded-4 mb-3" style="background: #eef8d2; color: #1e3309; font-size: 0.85rem; line-height: 1.48; font-weight: 600;">
             </div>
-            <div id="nutraAdvisorCards" class="d-flex flex-column gap-2.5">
+            <div id="nutraAdvisorCards" class="d-flex flex-column gap-3">
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
-<!-- IN-APP LIVE CAMERA VIEWFINDER MODAL -->
-<div id="cameraViewfinderModal" class="nutra-camera-viewfinder d-none">
+<!-- IN-APP LIVE CAMERA VIEWFINDER MODAL (<dialog> nativo) -->
+<dialog id="cameraViewfinderModal" class="nutra-camera-viewfinder" closedby="any">
     <div class="camera-top-bar">
         <button type="button" class="btn btn-dark rounded-circle p-2" onclick="closeCameraViewfinder()" style="width: 42px; height: 42px; background: rgba(0,0,0,0.55); border: none;">
             <i class="fa-solid fa-xmark text-white fs-5"></i>
@@ -1164,7 +1224,7 @@
         </button>
         <div style="width: 60px;"></div>
     </div>
-</div>
+</dialog>
 
 <!-- Modal para Registrar Peso Semanal -->
 <div class="modal fade" id="weightModal" tabindex="-1">
@@ -1217,21 +1277,125 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Modal Management
+    // Modal & Mobile Back-Button History Management
     const mealsDataMap = {{ meals_data_json|safe }};
     const defaultPendingMealCode = '{{ pending_meal_code|default:"cena" }}';
     let currentDetailMealCode = 'almuerzo';
     let activeQuickMealType = 'almuerzo';
     let activeAssistantMealType = defaultPendingMealCode;
     let userManuallyPickedAssistantMeal = false;
+    const NUTRA_SHEET_IDS = ['mealDetailSheet', 'quickAddSheet', 'assistantSheet'];
+    let isClosingViaPopstate = false;
+    let ignoreNextPopstate = false;
+    let weightModalInstance = null;
 
-    function closeAllModals() {
-        document.getElementById('sheetBackdrop').classList.remove('open');
-        document.getElementById('quickAddSheet').classList.remove('open');
-        document.getElementById('assistantSheet').classList.remove('open');
-        const detailSheet = document.getElementById('mealDetailSheet');
-        if (detailSheet) detailSheet.classList.remove('open');
+    function pushModalHistory(modalId) {
+        if (!history.state || history.state.nutraModal !== modalId) {
+            history.pushState({ nutraModal: modalId }, '');
+        }
     }
+
+    function popModalHistoryIfActive(modalId) {
+        if (!isClosingViaPopstate && history.state && history.state.nutraModal === modalId) {
+            ignoreNextPopstate = true;
+            history.back();
+        }
+    }
+
+    function closeDialogSafely(id, fromPopstate = false) {
+        const dlg = document.getElementById(id);
+        if (!dlg) return;
+        if (id === 'cameraViewfinderModal' && cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+        }
+        if (fromPopstate) isClosingViaPopstate = true;
+        if (dlg.open) dlg.close();
+        if (fromPopstate) {
+            isClosingViaPopstate = false;
+        } else {
+            popModalHistoryIfActive(id);
+        }
+    }
+
+    function closeAllModals(replaceCurrent = false) {
+        NUTRA_SHEET_IDS.forEach(id => {
+            const dlg = document.getElementById(id);
+            if (dlg && dlg.open) {
+                if (replaceCurrent) {
+                    isClosingViaPopstate = true;
+                    dlg.close();
+                    isClosingViaPopstate = false;
+                } else {
+                    closeDialogSafely(id, false);
+                }
+            }
+        });
+    }
+
+    // Attach light-dismiss fallback & clean history sync on every <dialog>
+    document.addEventListener('DOMContentLoaded', () => {
+        [...NUTRA_SHEET_IDS, 'cameraViewfinderModal'].forEach(id => {
+            const dlg = document.getElementById(id);
+            if (!dlg) return;
+            dlg.addEventListener('click', (e) => {
+                if (e.target !== dlg) return;
+                const rect = dlg.getBoundingClientRect();
+                const clickedOutside = (
+                    e.clientX < rect.left || e.clientX > rect.right ||
+                    e.clientY < rect.top || e.clientY > rect.bottom
+                );
+                if (clickedOutside) {
+                    closeDialogSafely(id, false);
+                }
+            });
+            dlg.addEventListener('cancel', () => {
+                if (id === 'cameraViewfinderModal' && cameraStream) {
+                    cameraStream.getTracks().forEach(t => t.stop());
+                    cameraStream = null;
+                }
+            });
+            dlg.addEventListener('close', () => {
+                if (id === 'cameraViewfinderModal' && cameraStream) {
+                    cameraStream.getTracks().forEach(t => t.stop());
+                    cameraStream = null;
+                }
+                popModalHistoryIfActive(id);
+            });
+        });
+
+        const wEl = document.getElementById('weightModal');
+        if (wEl) {
+            wEl.addEventListener('shown.bs.modal', () => pushModalHistory('weightModal'));
+            wEl.addEventListener('hidden.bs.modal', () => popModalHistoryIfActive('weightModal'));
+        }
+    });
+
+    window.addEventListener('popstate', () => {
+        if (ignoreNextPopstate) {
+            ignoreNextPopstate = false;
+            return;
+        }
+        const camDlg = document.getElementById('cameraViewfinderModal');
+        if (camDlg && camDlg.open) {
+            closeDialogSafely('cameraViewfinderModal', true);
+            return;
+        }
+        const wEl = document.getElementById('weightModal');
+        if (wEl && wEl.classList.contains('show') && weightModalInstance) {
+            isClosingViaPopstate = true;
+            weightModalInstance.hide();
+            isClosingViaPopstate = false;
+            return;
+        }
+        for (const id of NUTRA_SHEET_IDS) {
+            const dlg = document.getElementById(id);
+            if (dlg && dlg.open) {
+                closeDialogSafely(id, true);
+                return;
+            }
+        }
+    });
 
     const defaultCategoryPhotos = {
         'desayuno': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop&q=80',
@@ -1242,7 +1406,7 @@
     };
 
     function openMealDetailModal(mealCode) {
-        closeAllModals();
+        closeAllModals(true);
         currentDetailMealCode = mealCode;
         const meal = mealsDataMap[mealCode];
         if (!meal) return;
@@ -1306,38 +1470,38 @@
             listContainer.innerHTML = '<p class="text-muted small m-0 text-center py-2">No hay alimentos registrados en esta comida.</p>';
         }
 
-        document.getElementById('sheetBackdrop').classList.add('open');
-        document.getElementById('mealDetailSheet').classList.add('open');
+        const dlg = document.getElementById('mealDetailSheet');
+        if (dlg && !dlg.open) dlg.showModal();
+        pushModalHistory('mealDetailSheet');
     }
 
     function closeMealDetailModal() {
-        document.getElementById('sheetBackdrop').classList.remove('open');
-        document.getElementById('mealDetailSheet').classList.remove('open');
+        closeDialogSafely('mealDetailSheet', false);
     }
 
     function addMoreToCurrentMeal() {
-        closeMealDetailModal();
+        closeAllModals(true);
         const meal = mealsDataMap[currentDetailMealCode];
         openQuickAddModal(currentDetailMealCode, meal ? meal.label : 'Comida');
     }
 
     function addMoreWithAiToCurrentMeal() {
-        closeMealDetailModal();
+        closeAllModals(true);
         openAssistantModal(currentDetailMealCode);
     }
 
     function openQuickAddModal(mealCode, mealLabel) {
-        closeAllModals();
+        closeAllModals(true);
         if (mealCode) {
             selectQuickAddMeal(mealCode);
         }
-        document.getElementById('sheetBackdrop').classList.add('open');
-        document.getElementById('quickAddSheet').classList.add('open');
+        const dlg = document.getElementById('quickAddSheet');
+        if (dlg && !dlg.open) dlg.showModal();
+        pushModalHistory('quickAddSheet');
     }
 
     function closeQuickAddModal() {
-        document.getElementById('sheetBackdrop').classList.remove('open');
-        document.getElementById('quickAddSheet').classList.remove('open');
+        closeDialogSafely('quickAddSheet', false);
     }
 
     function selectQuickAddMeal(mealCode) {
@@ -1352,7 +1516,7 @@
     }
 
     function openAssistantModal(mealCode) {
-        closeAllModals();
+        closeAllModals(true);
         if (mealCode) {
             userManuallyPickedAssistantMeal = true;
             selectAssistantMeal(mealCode, true);
@@ -1360,13 +1524,13 @@
             userManuallyPickedAssistantMeal = false;
             selectAssistantMeal(defaultPendingMealCode, false);
         }
-        document.getElementById('sheetBackdrop').classList.add('open');
-        document.getElementById('assistantSheet').classList.add('open');
+        const dlg = document.getElementById('assistantSheet');
+        if (dlg && !dlg.open) dlg.showModal();
+        pushModalHistory('assistantSheet');
     }
 
     function closeAssistantModal() {
-        document.getElementById('sheetBackdrop').classList.remove('open');
-        document.getElementById('assistantSheet').classList.remove('open');
+        closeDialogSafely('assistantSheet', false);
     }
 
     function selectAssistantMeal(mealCode, isManual = false) {
@@ -1382,13 +1546,15 @@
     }
 
     function switchToAssistantFromQuickAdd() {
-        closeQuickAddModal();
+        closeAllModals(true);
         openAssistantModal(activeQuickMealType);
     }
 
     function openWeightModal() {
-        const m = new bootstrap.Modal(document.getElementById('weightModal'));
-        m.show();
+        const wEl = document.getElementById('weightModal');
+        if (!wEl) return;
+        weightModalInstance = bootstrap.Modal.getOrCreateInstance(wEl);
+        weightModalInstance.show();
     }
 
     // Quick Add Food Actions
@@ -1498,7 +1664,9 @@
                 const video = document.getElementById('cameraLiveVideo');
                 video.srcObject = stream;
                 await video.play();
-                document.getElementById('cameraViewfinderModal').classList.remove('d-none');
+                const camDlg = document.getElementById('cameraViewfinderModal');
+                if (camDlg && !camDlg.open) camDlg.showModal();
+                pushModalHistory('cameraViewfinderModal');
                 return;
             } catch (err1) {
                 console.warn('getUserMedia con constraints falló, reintentando con video simple:', err1);
@@ -1508,7 +1676,9 @@
                     const video = document.getElementById('cameraLiveVideo');
                     video.srcObject = stream;
                     await video.play();
-                    document.getElementById('cameraViewfinderModal').classList.remove('d-none');
+                    const camDlg = document.getElementById('cameraViewfinderModal');
+                    if (camDlg && !camDlg.open) camDlg.showModal();
+                    pushModalHistory('cameraViewfinderModal');
                     return;
                 } catch (err2) {
                     console.warn('getUserMedia no disponible o bloqueado, usando cámara nativa:', err2);
@@ -1526,11 +1696,7 @@
     }
 
     function closeCameraViewfinder() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(t => t.stop());
-            cameraStream = null;
-        }
-        document.getElementById('cameraViewfinderModal').classList.add('d-none');
+        closeDialogSafely('cameraViewfinderModal', false);
     }
 
     async function flipCamera() {
@@ -1771,25 +1937,25 @@
                     selectAssistantMeal(data.recommended_meal_type, false);
                 }
                 lastAdvisorSuggestions = data.suggestions || [];
-                adviceEl.innerHTML = `<i class="fa-solid fa-sparkles me-1"></i> ${data.advice || 'Acá tenés opciones adaptadas a tus calorías restantes:'}`;
+                adviceEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#4e7110" class="me-2" style="vertical-align: -2px;"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>${data.advice || 'Acá tenés opciones adaptadas a tus calorías restantes:'}`;
 
                 if (lastAdvisorSuggestions.length > 0) {
                     let html = '';
                     lastAdvisorSuggestions.forEach((s, idx) => {
                         html += `
                             <div class="p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.1); box-shadow: 0 2px 8px rgba(23,33,22,0.03);">
-                                <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
                                     <strong style="font-size: 0.95rem; color: #172116; line-height: 1.25;">${s.title}</strong>
-                                    <span class="badge rounded-pill px-2.5 py-1 flex-shrink-0" style="background: #172116; color: #b8f34a; font-weight: 800; font-size: 0.78rem;">
+                                    <span class="badge rounded-pill px-3 py-1 flex-shrink-0" style="background: #172116; color: #b8f34a; font-weight: 800; font-size: 0.78rem;">
                                         ${s.calories} kcal
                                     </span>
                                 </div>
-                                <p style="font-size: 0.8rem; color: #5b6956; margin-bottom: 8px; line-height: 1.4;">${s.description}</p>
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-2" style="font-size: 0.72rem; font-weight: 700;">
-                                    <span class="badge rounded-pill" style="background: rgba(184, 243, 74, 0.28); color: #2d4508;">P: ${s.protein}g</span>
-                                    <span class="badge rounded-pill" style="background: rgba(245, 158, 11, 0.16); color: #b45309;">C: ${s.carbs}g</span>
-                                    <span class="badge rounded-pill" style="background: rgba(168, 85, 247, 0.14); color: #7e22ce;">G: ${s.fat}g</span>
-                                    <span class="badge rounded-pill" style="background: rgba(23,33,22,0.06); color: #43523f;">~${s.grams}g</span>
+                                <p style="font-size: 0.8rem; color: #5b6956; margin-bottom: 10px; line-height: 1.4;">${s.description}</p>
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-2" style="font-size: 0.72rem; font-weight: 700;">
+                                    <span class="badge rounded-pill px-2 py-1" style="background: rgba(184, 243, 74, 0.28); color: #2d4508;">P: ${s.protein}g</span>
+                                    <span class="badge rounded-pill px-2 py-1" style="background: rgba(245, 158, 11, 0.16); color: #b45309;">C: ${s.carbs}g</span>
+                                    <span class="badge rounded-pill px-2 py-1" style="background: rgba(168, 85, 247, 0.14); color: #7e22ce;">G: ${s.fat}g</span>
+                                    <span class="badge rounded-pill px-2 py-1" style="background: rgba(23,33,22,0.06); color: #43523f;">~${s.grams}g</span>
                                 </div>
                                 ${s.why_fit ? `<div style="font-size: 0.75rem; color: #4e7110; font-weight: 600; margin-bottom: 10px;"><i class="fa-solid fa-check-circle me-1"></i>${s.why_fit}</div>` : ''}
                                 <button type="button" class="btn w-100 py-2 rounded-pill fw-bold" style="background: #e2f7a9; color: #172116; font-size: 0.82rem; border: none;" onclick="registerSuggestedOption(${idx}, this)">

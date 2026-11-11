@@ -275,3 +275,72 @@ class DeficitTrackerTestCase(TestCase):
         # Dashboard must still link to the persistent photo URL instead of Unsplash fallback
         dash_res = self.client.get(reverse('dashboard'))
         self.assertContains(dash_res, photo_url)
+
+
+class PolishAndPasskeyTests(TestCase):
+    """Tests for NÜTRA auth styling, native dialog modal semantics, and WebAuthn endpoints."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='biouser', password='password123')
+        self.profile, _ = UserProfile.objects.get_or_create(user=self.user)
+        self.profile.onboarding_completed = True
+        self.profile.save(update_fields=['onboarding_completed'])
+
+    def test_login_and_register_nutra_ui(self):
+        login_res = self.client.get(reverse('login'))
+        self.assertEqual(login_res.status_code, 200)
+        self.assertContains(login_res, 'Volvé a tu balance.')
+        self.assertContains(login_res, 'autocomplete="username webauthn"')
+        self.assertContains(login_res, 'id="btnPasskeySignIn"')
+        self.assertNotContains(login_res, 'class="glass-nav"')
+
+        register_res = self.client.get(reverse('register'))
+        self.assertEqual(register_res.status_code, 200)
+        self.assertContains(register_res, 'Creá tu cuenta.')
+        self.assertNotContains(register_res, 'class="glass-nav"')
+
+    def test_dashboard_native_dialogs_and_no_legacy_backdrop(self):
+        self.client.login(username='biouser', password='password123')
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertContains(dash_res, '<dialog class="nutra-bottom-sheet" id="assistantSheet" closedby="any"')
+        self.assertContains(dash_res, '<dialog id="cameraViewfinderModal"')
+        self.assertNotContains(dash_res, 'id="sheetBackdrop"')
+
+    def test_passkey_options_and_unknown_credential_404(self):
+        # Public auth options should succeed unauthenticated with discoverable allowCredentials=[]
+        auth_opt_res = self.client.post(
+            reverse('passkey_auth_options'),
+            data=json.dumps({}),
+            content_type='application/json',
+        )
+        self.assertEqual(auth_opt_res.status_code, 200)
+        auth_payload = auth_opt_res.json()
+        self.assertIn('challenge', auth_payload)
+        self.assertIn('rpId', auth_payload)
+        self.assertEqual(auth_payload.get('allowCredentials'), [])
+
+        # Unknown credential verification MUST return HTTP 404 for signalUnknownCredential
+        unknown_verify_res = self.client.post(
+            reverse('passkey_auth_verify'),
+            data=json.dumps({'id': 'nonexistent-credential-id-xyz', 'rawId': 'nonexistent-credential-id-xyz'}),
+            content_type='application/json',
+        )
+        self.assertEqual(unknown_verify_res.status_code, 404)
+
+        # Authenticated registration options should include user handle, rp.id, and preferred UV
+        self.client.login(username='biouser', password='password123')
+        reg_opt_res = self.client.post(
+            reverse('passkey_register_options'),
+            data=json.dumps({}),
+            content_type='application/json',
+        )
+        self.assertEqual(reg_opt_res.status_code, 200)
+        reg_payload = reg_opt_res.json()
+        self.assertIn('challenge', reg_payload)
+        self.assertIn('rp', reg_payload)
+        self.assertIn('id', reg_payload['rp'])
+        self.assertIn('user', reg_payload)
+        self.assertIn('authenticatorSelection', reg_payload)
+        self.assertEqual(reg_payload['authenticatorSelection'].get('userVerification'), 'preferred')
+

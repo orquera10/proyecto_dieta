@@ -1,60 +1,167 @@
 {% extends "base.html" %}
 
-{% block title %}Crear Cuenta | Déficit Calórico{% endblock %}
+{% block title %}Crear Cuenta | NÜTRA{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        background-color: #10150f !important;
+        background-image:
+            radial-gradient(circle at 80% 10%, rgba(184, 243, 74, 0.12) 0%, transparent 45%),
+            radial-gradient(circle at 15% 85%, rgba(184, 243, 74, 0.06) 0%, transparent 45%) !important;
+        color: #f3f4ee !important;
+        font-family: 'Manrope', 'Plus Jakarta Sans', sans-serif !important;
+        margin: 0;
+        padding: 0;
+    }
+    main.container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+    .nutra-auth-screen {
+        max-width: 440px;
+        margin: 0 auto;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: calc(24px + env(safe-area-inset-top, 0px)) 20px calc(32px + env(safe-area-inset-bottom, 0px));
+    }
+    .nutra-brand-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: #b8f34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .auth-eyebrow {
+        color: #b8f34a;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+    .auth-title {
+        font-family: 'Manrope', sans-serif !important;
+        letter-spacing: -0.045em;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.08;
+        color: #ffffff;
+        margin-bottom: 10px;
+    }
+    .auth-copy {
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 0.92rem;
+        line-height: 1.5;
+        margin-bottom: 22px;
+    }
+    .nutra-field-label {
+        display: block;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 0.76rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .nutra-register-form input {
+        width: 100%;
+        background: #171f15 !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 12px 15px !important;
+        color: #ffffff !important;
+        font-size: 0.96rem !important;
+        font-weight: 600;
+    }
+    .nutra-register-form input:focus {
+        border-color: #b8f34a !important;
+        box-shadow: 0 0 0 3px rgba(184, 243, 74, 0.14) !important;
+        outline: none;
+    }
+    .btn-nutra-lime {
+        width: 100%;
+        background: #b8f34a;
+        color: #10150f;
+        border: none;
+        border-radius: 999px;
+        padding: 15px 22px;
+        font-size: 1rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
-    <div class="col-md-6 col-lg-5">
-        <div class="card p-4 shadow-lg">
-            <div class="text-center mb-4">
-                <i class="fa-solid fa-user-plus fa-3x text-info mb-2"></i>
-                <h4 class="fw-bold text-light">Crear Cuenta</h4>
-                <p class="text-secondary small">Empieza a registrar tus comidas y controlar tu déficit</p>
-            </div>
-
-            {% if form.errors %}
-                <div class="alert alert-danger small py-2">
-                    Por favor revisa los errores en el formulario.
+<div class="nutra-auth-screen">
+    <div>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-2">
+                <div class="nutra-brand-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
+                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                    </svg>
                 </div>
-            {% endif %}
-
-            <form method="post" action="{% url 'register' %}">
-                {% csrf_token %}
-                
-                <div class="mb-3">
-                    <label for="id_username" class="form-label text-secondary small fw-bold">Nombre de Usuario</label>
-                    {{ form.username }}
-                    {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <label for="id_email" class="form-label text-secondary small fw-bold">Correo Electrónico</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors }}</div>{% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <label for="id_password1" class="form-label text-secondary small fw-bold">Contraseña</label>
-                    {{ form.password1 }}
-                    {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors }}</div>{% endif %}
-                </div>
-
-                <div class="mb-4">
-                    <label for="id_password2" class="form-label text-secondary small fw-bold">Confirmar Contraseña</label>
-                    {{ form.password2 }}
-                    {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors }}</div>{% endif %}
-                </div>
-
-                <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
-                    <i class="fa-solid fa-check me-2"></i>Crear Cuenta y Empezar
-                </button>
-            </form>
-
-            <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-25">
-                <span class="text-secondary small">¿Ya tienes cuenta?</span>
-                <a href="{% url 'login' %}" class="small text-info text-decoration-none fw-bold ms-1">Inicia sesión</a>
+                <span style="font-weight: 900; letter-spacing: -0.02em; font-size: 1.3rem; color: #ffffff;">NÜTRA</span>
             </div>
         </div>
+
+        <div class="auth-eyebrow">EMPECEMOS</div>
+        <h1 class="auth-title">Creá tu cuenta.</h1>
+        <p class="auth-copy">Armá tu perfil nutricional con IA y seguí tu progreso semanal.</p>
+
+        {% if form.errors %}
+            <div class="alert alert-danger small rounded-4 py-2 mb-3">
+                Por favor revisá los errores en el formulario.
+            </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'register' %}" class="nutra-register-form">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="id_username" class="nutra-field-label">Nombre de usuario</label>
+                {{ form.username }}
+                {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_email" class="nutra-field-label">Correo electrónico</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_password1" class="nutra-field-label">Contraseña</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label for="id_password2" class="nutra-field-label">Confirmar contraseña</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors }}</div>{% endif %}
+            </div>
+
+            <button type="submit" class="btn-nutra-lime">
+                <span>Crear cuenta y empezar</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="text-center pt-4 mt-3" style="border-top: 1px solid rgba(255,255,255,0.08);">
+        <span style="color: rgba(255,255,255,0.55); font-size: 0.88rem;">¿Ya tenés cuenta?</span>
+        <a href="{% url 'login' %}" class="text-decoration-none fw-bold ms-1" style="color: #b8f34a; font-size: 0.88rem;">
+            Iniciá sesión
+        </a>
     </div>
 </div>
 {% endblock %}
