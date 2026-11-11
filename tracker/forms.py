@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
 from .models import UserProfile, FoodItem, MealEntry, WeightLog
 
 
@@ -125,13 +124,34 @@ class WeightLogForm(forms.ModelForm):
         }
 
 
-class RegisterForm(UserCreationForm):
-    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+class RegisterForm(forms.Form):
+    """Registro simple sin verificación ni restricciones complejas de contraseña."""
+    username = forms.CharField(
+        max_length=150,
+        error_messages={'required': 'Ingresá un nombre de usuario.'},
+    )
+    password = forms.CharField(
+        min_length=4,
+        widget=forms.PasswordInput(),
+        error_messages={
+            'required': 'Ingresá una contraseña.',
+            'min_length': 'La contraseña debe tener al menos 4 caracteres.',
+        },
+    )
+    email = forms.EmailField(required=False)
 
-    class Meta(UserCreationForm.Meta):
-        fields = UserCreationForm.Meta.fields + ('email',)
+    def clean_username(self):
+        username = (self.cleaned_data.get('username') or '').strip()
+        if not username:
+            raise forms.ValidationError('Ingresá un nombre de usuario válido.')
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('Ese nombre de usuario ya está registrado. Elegí otro.')
+        return username
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for fieldname in self.fields:
-            self.fields[fieldname].widget.attrs['class'] = 'form-control'
+    def save(self, commit=True):
+        user = User.objects.create_user(
+            username=self.cleaned_data['username'],
+            email=(self.cleaned_data.get('email') or '').strip(),
+            password=self.cleaned_data['password'],
+        )
+        return user

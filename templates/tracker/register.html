@@ -62,24 +62,38 @@
     .nutra-field-label {
         display: block;
         color: rgba(255, 255, 255, 0.68);
-        font-size: 0.76rem;
+        font-size: 0.78rem;
         font-weight: 700;
-        margin-bottom: 6px;
+        margin-bottom: 7px;
     }
-    .nutra-register-form input {
-        width: 100%;
-        background: #171f15 !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 16px !important;
-        padding: 12px 15px !important;
+    .nutra-field-shell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #171f15;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        border-radius: 18px;
+        padding: 4px 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .nutra-field-shell:focus-within {
+        border-color: #b8f34a;
+        box-shadow: 0 0 0 3px rgba(184, 243, 74, 0.14);
+    }
+    .nutra-field-input {
+        flex: 1;
+        min-width: 0;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
         color: #ffffff !important;
-        font-size: 0.96rem !important;
+        font-size: 0.98rem;
         font-weight: 600;
+        padding: 12px 2px;
     }
-    .nutra-register-form input:focus {
-        border-color: #b8f34a !important;
-        box-shadow: 0 0 0 3px rgba(184, 243, 74, 0.14) !important;
-        outline: none;
+    .nutra-field-input::placeholder {
+        color: rgba(255, 255, 255, 0.34);
     }
     .btn-nutra-lime {
         width: 100%;
@@ -103,44 +117,80 @@
 <div class="nutra-auth-screen">
     <div>
         <div class="d-flex align-items-center justify-content-between mb-4">
-            {% include "tracker/_nutrix_logo.html" with dark_bg=True icon_size="38" font_size="1.3rem" %}
+            {% include "tracker/_nutrix_logo.html" with dark_bg=True icon_size="40" font_size="1.35rem" %}
+            <span class="badge rounded-pill px-3 py-2" style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.65); font-size: 0.72rem; font-weight: 700;">
+                Alta rápida
+            </span>
         </div>
 
         <div class="auth-eyebrow">EMPECEMOS</div>
         <h1 class="auth-title">Creá tu cuenta.</h1>
-        <p class="auth-copy">Armá tu perfil nutricional con IA y seguí tu progreso semanal.</p>
+        <p class="auth-copy">Solo elegí un usuario y una contraseña. Sin verificación ni pasos extra.</p>
 
         {% if form.errors %}
-            <div class="alert alert-danger small rounded-4 py-2 mb-3">
-                Por favor revisá los errores en el formulario.
+            <div class="rounded-4 p-3 mb-3 small fw-semibold" style="background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.35); color: #fecaca;">
+                Por favor revisá los datos marcados abajo.
             </div>
         {% endif %}
 
-        <form method="post" action="{% url 'register' %}" class="nutra-register-form">
+        <form method="post" action="{% url 'register' %}" class="nutra-register-form" novalidate>
             {% csrf_token %}
 
             <div class="mb-3">
-                <label for="id_username" class="nutra-field-label">Nombre de usuario</label>
-                {{ form.username }}
-                {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+                <label for="id_username" class="nutra-field-label">Usuario</label>
+                <div class="nutra-field-shell">
+                    <i class="fa-regular fa-user" style="color: rgba(255,255,255,0.42);"></i>
+                    <input
+                        type="text"
+                        name="username"
+                        id="id_username"
+                        value="{{ form.username.value|default:'' }}"
+                        class="nutra-field-input"
+                        placeholder="Ej: juan10"
+                        autocomplete="username"
+                        required
+                        autofocus
+                    >
+                </div>
+                {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors|join:", " }}</div>{% endif %}
             </div>
 
             <div class="mb-3">
-                <label for="id_email" class="nutra-field-label">Correo electrónico</label>
-                {{ form.email }}
-                {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors }}</div>{% endif %}
-            </div>
-
-            <div class="mb-3">
-                <label for="id_password1" class="nutra-field-label">Contraseña</label>
-                {{ form.password1 }}
-                {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors }}</div>{% endif %}
+                <label for="id_password" class="nutra-field-label">Contraseña <span style="color: rgba(255,255,255,0.42); font-weight: 500;">(mín. 4 caracteres)</span></label>
+                <div class="nutra-field-shell">
+                    <i class="fa-solid fa-lock" style="color: rgba(255,255,255,0.42);"></i>
+                    <input
+                        type="password"
+                        name="password"
+                        id="id_password"
+                        class="nutra-field-input"
+                        placeholder="Elegí una clave simple"
+                        autocomplete="new-password"
+                        minlength="4"
+                        required
+                    >
+                    <button type="button" id="btnToggleRegPassword" class="btn btn-sm p-1 border-0" style="color: rgba(255,255,255,0.5);" aria-label="Mostrar u ocultar contraseña">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors|join:", " }}</div>{% endif %}
             </div>
 
             <div class="mb-4">
-                <label for="id_password2" class="nutra-field-label">Confirmar contraseña</label>
-                {{ form.password2 }}
-                {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors }}</div>{% endif %}
+                <label for="id_email" class="nutra-field-label">Correo electrónico <span style="color: rgba(255,255,255,0.42); font-weight: 500;">(opcional)</span></label>
+                <div class="nutra-field-shell">
+                    <i class="fa-regular fa-envelope" style="color: rgba(255,255,255,0.42);"></i>
+                    <input
+                        type="email"
+                        name="email"
+                        id="id_email"
+                        value="{{ form.email.value|default:'' }}"
+                        class="nutra-field-input"
+                        placeholder="tu@email.com (opcional)"
+                        autocomplete="email"
+                    >
+                </div>
+                {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors|join:", " }}</div>{% endif %}
             </div>
 
             <button type="submit" class="btn-nutra-lime">
@@ -157,4 +207,17 @@
         </a>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('btnToggleRegPassword')?.addEventListener('click', () => {
+        const inp = document.getElementById('id_password');
+        const btn = document.getElementById('btnToggleRegPassword');
+        if (!inp || !btn) return;
+        const showing = inp.type === 'text';
+        inp.type = showing ? 'password' : 'text';
+        btn.innerHTML = showing ? '<i class="fa-regular fa-eye"></i>' : '<i class="fa-regular fa-eye-slash"></i>';
+    });
+</script>
 {% endblock %}

@@ -400,5 +400,28 @@ class PolishAndPasskeyTests(TestCase):
         self.assertEqual(MealEntry.objects.filter(user=self.user, date=yesterday).count(), 0)
         self.assertEqual(MealEntry.objects.filter(user=self.user, date=timezone.localdate()).count(), 1)
 
+    def test_simple_registration_without_verification(self):
+        # Simple 4-char password and blank email should immediately create user & redirect to onboarding
+        res = self.client.post(reverse('register'), data={
+            'username': 'nuevo123',
+            'password': '1234',
+            'email': '',
+        })
+        self.assertRedirects(res, reverse('onboarding'), fetch_redirect_response=False)
+        self.assertTrue(User.objects.filter(username='nuevo123').exists())
+        # User should already be logged in
+        onb_res = self.client.get(reverse('onboarding'))
+        self.assertEqual(onb_res.status_code, 200)
+
+        # Duplicate username (case-insensitive) should fail with friendly Spanish message
+        self.client.logout()
+        dup_res = self.client.post(reverse('register'), data={
+            'username': 'NUEVO123',
+            'password': '1234',
+        })
+        self.assertEqual(dup_res.status_code, 200)
+        self.assertContains(dup_res, 'Ese nombre de usuario ya está registrado')
+
+
 
 
