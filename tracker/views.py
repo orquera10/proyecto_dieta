@@ -75,6 +75,7 @@ def onboarding_view(request):
         profile.gender = gender
         profile.age = age
         profile.height = height
+        profile.current_weight = current_weight
         profile.target_weight = target_weight
         profile.activity_level = activity_level
         profile.deficit_rate = deficit_rate
@@ -100,11 +101,14 @@ def onboarding_view(request):
         return redirect('dashboard')
 
     latest_weight = WeightLog.objects.filter(user=request.user).order_by('-date').first()
-    initial_weight = latest_weight.weight if latest_weight else (profile.target_weight or Decimal('78.0'))
+    initial_weight = latest_weight.weight if latest_weight else (profile.current_weight or Decimal('72.0'))
 
     context = {
         'profile': profile,
         'initial_weight': initial_weight,
+        'initial_weight_val': f"{float(initial_weight):.1f}",
+        'target_weight_val': f"{float(profile.target_weight if profile.target_weight is not None else 64.0):.1f}",
+        'height_val': str(int(round(float(profile.height or 168)))),
     }
     return render(request, 'tracker/onboarding.html', context)
 
@@ -476,15 +480,39 @@ def edit_food_view(request, pk):
 @login_required
 def profile_settings_view(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    # Backfill current_weight from latest WeightLog if it wasn't persisted during an earlier onboarding
+    if profile.current_weight is None:
+        latest_weight = WeightLog.objects.filter(user=request.user).order_by('-date').first()
+        if latest_weight:
+            profile.current_weight = latest_weight.weight
+            profile.save()
+
     if request.method == 'POST':
         form = UserProfileForm(request.POST, instance=profile)
         if form.is_valid():
-            form.save()
+            saved_profile = form.save()
+            if saved_profile.current_weight is not None:
+                today = timezone.localdate()
+                WeightLog.objects.update_or_create(
+                    user=request.user,
+                    date=today,
+                    defaults={'weight': saved_profile.current_weight, 'notes': 'Actualizado desde Mi Perfil'}
+                )
             messages.success(request, "Configuración de déficit calórico guardada correctamente.")
             return redirect('dashboard')
+        else:
+            messages.error(request, "Por favor verificá los datos ingresados en tu perfil.")
     else:
         form = UserProfileForm(instance=profile)
-    return render(request, 'tracker/profile_settings.html', {'form': form, 'profile': profile})
+
+    context = {
+        'form': form,
+        'profile': profile,
+        'height_val': str(int(round(float(profile.height or 168)))),
+        'current_weight_val': f"{float(profile.current_weight if profile.current_weight is not None else 72.0):.1f}",
+        'target_weight_val': f"{float(profile.target_weight if profile.target_weight is not None else 64.0):.1f}",
+    }
+    return render(request, 'tracker/profile_settings.html', context)
 
 
 @login_required

@@ -151,6 +151,14 @@ class DeficitTrackerTestCase(TestCase):
         new_user.profile.refresh_from_db()
         self.assertTrue(new_user.profile.onboarding_completed)
         self.assertEqual(new_user.profile.calorie_target, 1850)
+        self.assertEqual(float(new_user.profile.current_weight), 82.5)
+        self.assertEqual(float(new_user.profile.target_weight), 76.0)
+
+        # Profile settings must render dot-decimal values for HTML5 number inputs
+        prof_res = self.client.get(reverse('profile_settings'))
+        self.assertEqual(prof_res.status_code, 200)
+        self.assertContains(prof_res, 'value="82.5"')
+        self.assertContains(prof_res, 'value="76.0"')
 
         # Now dashboard should return 200
         dash_res = self.client.get(reverse('dashboard'))

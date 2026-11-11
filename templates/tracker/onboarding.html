@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load l10n %}
 
 {% block title %}Comenzá tu Plan | NÜTRA{% endblock %}
 
@@ -324,6 +325,7 @@
                 <button type="button" class="{% if profile.gender != 'F' %}active{% endif %}" id="btnSexM" onclick="setSex('M')">Hombre</button>
             </div>
 
+            {% localize off %}
             <label class="field-label" for="inAge">Edad</label>
             <div class="field-shell">
                 <input type="number" id="inAge" class="field-input" value="{{ profile.age|default:29 }}" min="14" max="100">
@@ -332,21 +334,22 @@
 
             <label class="field-label" for="inHeight">Altura</label>
             <div class="field-shell">
-                <input type="number" id="inHeight" class="field-input" value="{{ profile.height|default:168|floatformat:0 }}" min="120" max="230">
+                <input type="number" id="inHeight" class="field-input" value="{{ height_val }}" min="120" max="230">
                 <span class="field-suffix">cm</span>
             </div>
 
             <label class="field-label" for="inWeight">Peso actual</label>
             <div class="field-shell">
-                <input type="number" step="0.1" id="inWeight" class="field-input" value="{{ initial_weight|default:72.0|floatformat:1 }}" min="35" max="250">
+                <input type="number" step="0.1" id="inWeight" class="field-input" value="{{ initial_weight_val }}" min="35" max="250">
                 <span class="field-suffix">kg</span>
             </div>
 
             <label class="field-label" for="inTarget">Peso deseado</label>
             <div class="field-shell">
-                <input type="number" step="0.1" id="inTarget" class="field-input" value="{{ profile.target_weight|default:64.0|floatformat:1 }}" min="35" max="250">
+                <input type="number" step="0.1" id="inTarget" class="field-input" value="{{ target_weight_val }}" min="35" max="250">
                 <span class="field-suffix">kg</span>
             </div>
+            {% endlocalize %}
         </div>
 
         <!-- STEP 2: Nivel de Actividad -->

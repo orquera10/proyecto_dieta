@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load l10n %}
 
 {% block title %}Mi Perfil | NÜTRA{% endblock %}
 
@@ -328,6 +329,7 @@
                 <button type="button" class="{% if profile.gender != 'F' %}active{% endif %}" id="pSexM" onclick="setProfileSex('M')">Hombre</button>
             </div>
 
+            {% localize off %}
             <label class="field-label" for="id_age">Edad</label>
             <div class="field-shell">
                 <input type="number" id="id_age" name="age" class="field-input" value="{{ profile.age|default:29 }}" min="14" max="110">
@@ -336,21 +338,22 @@
 
             <label class="field-label" for="id_height">Altura</label>
             <div class="field-shell">
-                <input type="number" id="id_height" name="height" class="field-input" value="{{ profile.height|default:168|floatformat:0 }}" min="100" max="240">
+                <input type="number" id="id_height" name="height" class="field-input" value="{{ height_val }}" min="100" max="240">
                 <span class="field-suffix">cm</span>
             </div>
 
             <label class="field-label" for="id_current_weight">Peso actual</label>
             <div class="field-shell">
-                <input type="number" step="0.1" id="id_current_weight" name="current_weight" class="field-input" value="{{ profile.current_weight|default:72.0|floatformat:1 }}" min="30" max="300">
+                <input type="number" step="0.1" id="id_current_weight" name="current_weight" class="field-input" value="{{ current_weight_val }}" min="30" max="300">
                 <span class="field-suffix">kg</span>
             </div>
 
             <label class="field-label" for="id_target_weight">Peso deseado (meta)</label>
             <div class="field-shell">
-                <input type="number" step="0.1" id="id_target_weight" name="target_weight" class="field-input" value="{{ profile.target_weight|default:64.0|floatformat:1 }}" min="30" max="300">
+                <input type="number" step="0.1" id="id_target_weight" name="target_weight" class="field-input" value="{{ target_weight_val }}" min="30" max="300">
                 <span class="field-suffix">kg</span>
             </div>
+            {% endlocalize %}
 
             <label class="field-label">Nivel de actividad</label>
             <div class="segmented mb-0" style="grid-template-columns: 1fr 1fr 1fr;">
@@ -371,6 +374,7 @@
                 </button>
             </div>
 
+            {% localize off %}
             <label class="field-label" for="id_calorie_target">Calorías diarias (Meta)</label>
             <div class="field-shell">
                 <input type="number" id="id_calorie_target" name="calorie_target" class="field-input" value="{{ profile.calorie_target|default:1700 }}" min="500" max="10000">
@@ -406,6 +410,7 @@
                     </div>
                 </div>
             </div>
+            {% endlocalize %}
 
             <div id="aiRecalcSpinner" class="d-none text-center mt-2 small text-success fw-bold">
                 <div class="spinner-border spinner-border-sm me-2"></div>
@@ -517,9 +522,9 @@
             if (data.success) {
                 document.getElementById('id_calorie_target').value = data.daily_calorie_target;
                 document.getElementById('id_maintenance_calories').value = data.maintenance_calories;
-                document.getElementById('id_protein_target').value = data.protein_g;
-                document.getElementById('id_carbs_target').value = data.carbs_g;
-                document.getElementById('id_fat_target').value = data.fat_g;
+                document.getElementById('id_protein_target').value = data.protein_target_g || data.protein_g;
+                document.getElementById('id_carbs_target').value = data.carbs_target_g || data.carbs_g;
+                document.getElementById('id_fat_target').value = data.fat_target_g || data.fat_g;
             }
         } catch(e) {
             console.warn('AI calculation failed, falling back to local calculation:', e);
