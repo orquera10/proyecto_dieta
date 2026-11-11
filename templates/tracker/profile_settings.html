@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load l10n static %}
 
-{% block title %}Mi Perfil | NÜTRA{% endblock %}
+{% block title %}Mi Perfil | NutriX{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -248,12 +248,7 @@
     <!-- Top Header -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none">
-            <div class="nutra-logo-box">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
-                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-                </svg>
-            </div>
-            <span style="font-weight: 900; letter-spacing: -0.02em; font-size: 1.35rem; color: #172116;">NÜTRA</span>
+            {% include "tracker/_nutrix_logo.html" with icon_size="40" font_size="1.35rem" %}
         </a>
         <a href="{% url 'dashboard' %}" class="btn btn-sm rounded-pill px-3 fw-bold" style="background: rgba(23,33,22,0.06); color: #172116;">
             <i class="fa-solid fa-arrow-left me-1"></i> Volver al diario
@@ -277,7 +272,7 @@
                 {{ user.email|default:user.username }}
             </span>
             <span class="badge mt-1 px-3 py-1 rounded-pill" style="background: #e7f7c8; color: #43630f; font-weight: 800; font-size: 0.7rem;">
-                PLAN ACTIVO • NÜTRA
+                PLAN ACTIVO • NutriX
             </span>
         </div>
     </div>

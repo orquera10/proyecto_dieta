@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% load l10n %}
 
-{% block title %}NÜTRA | Tu día en balance{% endblock %}
+{% block title %}NutriX | Tu día en balance{% endblock %}
 
 {% block extra_head %}
 <style>
-    /* NÜTRA Light Theme Design System - 100% Matching Figma Make */
+    /* NutriX Light Theme Design System - 100% Matching Figma Make */
     body {
         background-color: #f3f4ee !important;
         color: #172116 !important;
@@ -24,6 +24,90 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    /* Horizontal 7-Day Week Strip */
+    .nutrix-week-strip {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 10px 10px;
+        box-shadow: 0 4px 18px rgba(23, 33, 22, 0.045);
+        border: 1px solid rgba(23, 33, 22, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 18px;
+    }
+    .nutrix-week-arrow {
+        width: 32px;
+        height: 40px;
+        border-radius: 12px;
+        background: #eff2ea;
+        color: #172116;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        text-decoration: none;
+        font-size: 0.78rem;
+        transition: background-color 0.15s ease;
+    }
+    .nutrix-week-arrow:active {
+        background: #e2e7da;
+    }
+    .nutrix-week-arrow.disabled {
+        background: #f7f8f4;
+        color: #b7c0b3;
+        pointer-events: none;
+    }
+    .nutrix-week-days {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 2px;
+        align-items: center;
+    }
+    .nutrix-day-pill {
+        padding: 8px 2px;
+        border-radius: 15px;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: all 0.16s ease;
+    }
+    .nutrix-day-pill .day-wd {
+        font-size: 0.6rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        color: #879482;
+        line-height: 1;
+    }
+    .nutrix-day-pill .day-num {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #172116;
+        line-height: 1.1;
+    }
+    .nutrix-day-pill.active {
+        background: #172116;
+        padding: 8px 2px 7px;
+        box-shadow: 0 6px 14px rgba(23, 33, 22, 0.22);
+    }
+    .nutrix-day-pill.active .day-wd {
+        color: rgba(255, 255, 255, 0.75);
+    }
+    .nutrix-day-pill.active .day-num {
+        color: #ffffff;
+        font-weight: 800;
+    }
+    .nutrix-day-pill .day-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #b8f34a;
+        box-shadow: 0 0 6px rgba(184, 243, 74, 0.7);
     }
     .user-avatar-pill {
         width: 36px;
@@ -516,15 +600,8 @@
 {% block content %}
 <div class="nutra-container">
     <!-- Top Header -->
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div class="d-flex align-items-center gap-2">
-            <div class="nutra-logo-box">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
-                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-                </svg>
-            </div>
-            <span style="font-weight: 900; letter-spacing: -0.02em; font-size: 1.35rem; color: #172116;">NÜTRA</span>
-        </div>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        {% include "tracker/_nutrix_logo.html" with icon_size="40" font_size="1.4rem" %}
         <a href="{% url 'profile_settings' %}" class="user-avatar-pill text-decoration-none" title="Mi perfil">
             {{ user.username|slice:":2"|upper }}
         </a>
@@ -532,42 +609,53 @@
 
     <!-- VIEW 1: HOY (DASHBOARD) -->
     <div id="viewToday" class="{% if active_tab == 'progreso' %}d-none{% endif %}">
-        <!-- Day / Date Selector Bar -->
-        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-            <div class="d-inline-flex align-items-center gap-1 rounded-pill" style="background: rgba(23,33,22,0.05); padding: 4px; border: 1px solid rgba(23,33,22,0.07);">
-                <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center text-decoration-none" style="width: 30px; height: 30px; background: #ffffff; color: #172116; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Día anterior" aria-label="Día anterior">
-                    <i class="fa-solid fa-chevron-left" style="font-size: 0.72rem;"></i>
+        <!-- Horizontal 7-Day Week Strip -->
+        <div class="nutrix-week-strip">
+            <a href="?date={{ prev_strip_date }}" class="nutrix-week-arrow" title="Semana anterior" aria-label="Semana anterior">
+                <i class="fa-solid fa-chevron-left"></i>
+            </a>
+            <div class="nutrix-week-days">
+                {% for d in week_days %}
+                <a href="?date={{ d.date_str }}" class="nutrix-day-pill {% if d.is_selected %}active{% endif %}" aria-label="{{ d.weekday_short }} {{ d.day_num }}">
+                    <span class="day-wd">{{ d.weekday_short }}</span>
+                    <span class="day-num">{{ d.day_num }}</span>
+                    {% if d.is_selected %}<span class="day-dot"></span>{% endif %}
                 </a>
-                <label for="dashboardDatePicker" class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-0" style="cursor: pointer; font-size: 0.82rem; font-weight: 800; color: #172116; user-select: none;" onclick="const p=document.getElementById('dashboardDatePicker'); if(p && p.showPicker){ try{p.showPicker();}catch(e){} }">
-                    <i class="fa-regular fa-calendar" style="color: #4e7110; font-size: 0.82rem;"></i>
-                    <span>{% if is_today %}Hoy · {{ selected_date|date:"d M" }}{% else %}{{ selected_date|date:"D d M" }}{% endif %}</span>
-                    <input type="date" id="dashboardDatePicker" value="{{ selected_date|date:'Y-m-d' }}" max="{% now 'Y-m-d' %}" style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;" onchange="if(this.value) window.location.href='?date=' + this.value;">
-                </label>
-                {% if is_today %}
-                    <span class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px; color: #a3afa0; cursor: default; opacity: 0.45;" aria-disabled="true" title="Ya estás en hoy">
-                        <i class="fa-solid fa-chevron-right" style="font-size: 0.72rem;"></i>
-                    </span>
-                {% else %}
-                    <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center text-decoration-none" style="width: 30px; height: 30px; background: #ffffff; color: #172116; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Día siguiente" aria-label="Día siguiente">
-                        <i class="fa-solid fa-chevron-right" style="font-size: 0.72rem;"></i>
-                    </a>
-                {% endif %}
+                {% endfor %}
             </div>
-            {% if not is_today %}
-                <a href="{% url 'dashboard' %}" class="btn btn-sm rounded-pill fw-bold text-decoration-none" style="background: #b8f34a; color: #10150f; font-size: 0.76rem; padding: 6px 12px;">
-                    Volver a hoy
+            {% if can_go_next_strip %}
+                <a href="?date={{ next_strip_date }}" class="nutrix-week-arrow" title="Semana siguiente" aria-label="Semana siguiente">
+                    <i class="fa-solid fa-chevron-right"></i>
                 </a>
+            {% else %}
+                <span class="nutrix-week-arrow disabled" aria-disabled="true" title="Semana actual">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </span>
             {% endif %}
         </div>
 
-        <!-- Greetings -->
-        <div class="greeting-subhead">
-            {% if is_today %}
-                {% now "H" as current_hour %}
-                {% if current_hour|add:0 < 12 %}Buenos días,{% elif current_hour|add:0 < 19 %}Buenas tardes,{% else %}Buenas noches,{% endif %} {{ user.first_name|default:user.username }}
-            {% else %}
-                Historial del {{ selected_date|date:"d/m/Y" }}
-            {% endif %}
+        <!-- Greetings + Quick Calendar Jump / Back to Today -->
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+            <div class="greeting-subhead mb-0">
+                {% if is_today %}
+                    {% now "H" as current_hour %}
+                    {% if current_hour|add:0 < 12 %}Buenos días,{% elif current_hour|add:0 < 19 %}Buenas tardes,{% else %}Buenas noches,{% endif %} {{ user.first_name|default:user.username }}
+                {% else %}
+                    Historial del {{ selected_date|date:"d/m/Y" }}
+                {% endif %}
+            </div>
+            <div class="d-inline-flex align-items-center gap-2">
+                <label for="dashboardDatePicker" class="btn btn-sm rounded-pill d-inline-flex align-items-center gap-1 mb-0" style="background: rgba(23,33,22,0.05); color: #5e6d58; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; cursor: pointer;" title="Elegir fecha" onclick="const p=document.getElementById('dashboardDatePicker'); if(p && p.showPicker){ try{p.showPicker();}catch(e){} }">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span>Calendario</span>
+                    <input type="date" id="dashboardDatePicker" value="{{ selected_date|date:'Y-m-d' }}" max="{% now 'Y-m-d' %}" style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;" onchange="if(this.value) window.location.href='?date=' + this.value;">
+                </label>
+                {% if not is_today %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-sm rounded-pill fw-bold text-decoration-none" style="background: #b8f34a; color: #10150f; font-size: 0.72rem; padding: 4px 10px;">
+                        Volver a hoy
+                    </a>
+                {% endif %}
+            </div>
         </div>
         <h1 class="greeting-title">{% if is_today %}Tu día, en balance.{% else %}Resumen de ese día.{% endif %}</h1>
         <div class="greeting-copy">
@@ -1053,11 +1141,7 @@
 <!-- BOTTOM SHEET 2: ASISTENTE IA (<dialog> nativo top-layer) -->
 <dialog class="nutra-bottom-sheet" id="assistantSheet" closedby="any">
     <div class="d-flex align-items-center justify-content-between mb-4">
-        <div class="nutra-logo-box">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
-                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-            </svg>
-        </div>
+        {% include "tracker/_nutrix_logo.html" with emblem_only=True icon_size="40" %}
         <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeAssistantModal()">
             <i class="fa-solid fa-xmark text-dark"></i>
         </button>

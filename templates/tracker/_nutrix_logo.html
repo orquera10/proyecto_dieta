@@ -1,0 +1,12 @@
+<span class="d-inline-flex align-items-center gap-2" style="user-select: none;">
+    <svg width="{{ icon_size|default:'40' }}" height="{{ icon_size|default:'40' }}" viewBox="0 0 120 120" fill="none" style="flex-shrink: 0; filter: drop-shadow(0 3px 8px rgba(23,33,22,0.16));">
+        <circle cx="56" cy="56" r="46" fill="#172116"{% if dark_bg %} stroke="rgba(184,243,74,0.28)" stroke-width="2.5"{% endif %}/>
+        <path d="M40 72C40 50 56 36 74 36C74 54 60 72 40 72Z" stroke="#b8f34a" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M40 72L66 44" stroke="#b8f34a" stroke-width="4.2" stroke-linecap="round"/>
+        <circle cx="90" cy="88" r="20" fill="#b8f34a" stroke="{% if dark_bg %}#10150f{% else %}#f3f4ee{% endif %}" stroke-width="4.5"/>
+        <path d="M83 81L97 95M97 81L83 95" stroke="#10150f" stroke-width="4.6" stroke-linecap="round"/>
+    </svg>
+    {% if not emblem_only %}
+    <span style="font-weight: 900; letter-spacing: -0.03em; font-size: {{ font_size|default:'1.4rem' }}; line-height: 1; color: {% if dark_bg %}#ffffff{% else %}#172116{% endif %};">Nutri<span style="color: {% if dark_bg %}#b8f34a{% else %}#71ad14{% endif %};">X</span></span>
+    {% endif %}
+</span>

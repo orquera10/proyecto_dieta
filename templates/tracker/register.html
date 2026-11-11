@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Crear Cuenta | NÜTRA{% endblock %}
+{% block title %}Crear Cuenta | NutriX{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -103,14 +103,7 @@
 <div class="nutra-auth-screen">
     <div>
         <div class="d-flex align-items-center justify-content-between mb-4">
-            <div class="d-flex align-items-center gap-2">
-                <div class="nutra-brand-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#10150f">
-                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-                    </svg>
-                </div>
-                <span style="font-weight: 900; letter-spacing: -0.02em; font-size: 1.3rem; color: #ffffff;">NÜTRA</span>
-            </div>
+            {% include "tracker/_nutrix_logo.html" with dark_bg=True icon_size="38" font_size="1.3rem" %}
         </div>
 
         <div class="auth-eyebrow">EMPECEMOS</div>

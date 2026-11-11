@@ -51,14 +51,14 @@ jobs:
       - name: 📦 Renombrar APK para descarga fácil
         run: |
           mkdir -p build-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk build-output/DeficitTracker-v1.0.0.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk build-output/NutriX-v1.1.0.apk
           echo "APK generado exitosamente"
 
       - name: 📤 Subir APK como artefacto de GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: DeficitTracker-Android-APK
-          path: build-output/DeficitTracker-v1.0.0.apk
+          name: NutriX-Android-APK
+          path: build-output/NutriX-v1.1.0.apk
           retention-days: 30
 
       - name: 🏷️ Publicar Release en GitHub con APK
@@ -66,8 +66,8 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         with:
           tag_name: v1.0.0-apk
-          name: "Deficit Tracker v1.0.0 (Android APK)"
-          body: "Descarga e instala el archivo APK directamente en tu teléfono Android."
-          files: build-output/DeficitTracker-v1.0.0.apk
+          name: "NutriX v1.1.0 (Android APK)"
+          body: "Descarga e instala el archivo APK de NutriX directamente en tu teléfono Android."
+          files: build-output/NutriX-v1.1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

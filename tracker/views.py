@@ -167,7 +167,7 @@ def onboarding_view(request):
         WeightLog.objects.update_or_create(
             user=request.user,
             date=today,
-            defaults={'weight': current_weight, 'notes': 'Peso de inicio NÜTRA'}
+            defaults={'weight': current_weight, 'notes': 'Peso de inicio NutriX'}
         )
 
         messages.success(request, "¡Tu plan nutricional ha sido creado con éxito!")
@@ -194,19 +194,41 @@ def dashboard_view(request):
     if not profile.onboarding_completed and request.GET.get('skip_onboarding') != '1':
         return redirect('onboarding')
 
+    today = timezone.localdate()
     # Parse date parameter or default to today
     date_str = request.GET.get('date')
     if date_str:
         try:
             selected_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
-            selected_date = timezone.localdate()
+            selected_date = today
     else:
-        selected_date = timezone.localdate()
+        selected_date = today
 
     prev_date = selected_date - datetime.timedelta(days=1)
     next_date = selected_date + datetime.timedelta(days=1)
-    is_today = (selected_date == timezone.localdate())
+    is_today = (selected_date == today)
+
+    # 7-day horizontal calendar strip (7-day windows ending on today)
+    days_back = max(0, (today - selected_date).days)
+    page_offset = days_back // 7
+    window_end = min(today, today - datetime.timedelta(days=page_offset * 7))
+    window_start = window_end - datetime.timedelta(days=6)
+    weekday_abbr = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
+    week_days = []
+    for offset in range(7):
+        d = window_start + datetime.timedelta(days=offset)
+        week_days.append({
+            'date': d,
+            'date_str': d.strftime('%Y-%m-%d'),
+            'weekday_short': weekday_abbr[d.weekday()],
+            'day_num': d.day,
+            'is_selected': d == selected_date,
+            'is_today': d == today,
+        })
+    prev_strip_date = (window_start - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    can_go_next_strip = window_end < today
+    next_strip_date = min(today, window_end + datetime.timedelta(days=7)).strftime('%Y-%m-%d') if can_go_next_strip else today.strftime('%Y-%m-%d')
 
     # Fetch meal entries for date
     entries = MealEntry.objects.filter(
@@ -428,6 +450,10 @@ def dashboard_view(request):
         'prev_date': prev_date,
         'next_date': next_date,
         'is_today': is_today,
+        'week_days': week_days,
+        'prev_strip_date': prev_strip_date,
+        'next_strip_date': next_strip_date,
+        'can_go_next_strip': can_go_next_strip,
         'profile': profile,
         'meals_data': meals_data,
         'meals_data_json': meals_data_json,
@@ -1147,15 +1173,15 @@ def manifest_view(request):
     """PWA Web App Manifest for mobile installation and Android TWA"""
     data = {
         "id": "pw.dario10.dieta",
-        "name": "Déficit Calórico Tracker",
-        "short_name": "Déficit",
+        "name": "NutriX",
+        "short_name": "NutriX",
         "description": "Control de déficit calórico, registro de comidas con IA y seguimiento de peso",
         "start_url": "/dashboard/",
         "scope": "/",
         "display": "standalone",
         "display_override": ["standalone", "window-controls-overlay"],
-        "background_color": "#0f172a",
-        "theme_color": "#0f172a",
+        "background_color": "#10150f",
+        "theme_color": "#10150f",
         "orientation": "portrait-primary",
         "lang": "es-ES",
         "categories": ["health", "fitness", "lifestyle"],
@@ -1165,32 +1191,32 @@ def manifest_view(request):
                 "short_name": "IA Comida",
                 "description": "Registra lo que comiste con Gemini IA",
                 "url": "/dashboard/?action=ai",
-                "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png", "sizes": "192x192"}]
+                "icons": [{"src": "/static/icons/nutrix-icon-192.png", "sizes": "192x192", "type": "image/png"}]
             },
             {
-                "name": "Calculadora Déficit",
-                "short_name": "Déficit",
-                "description": "Calcula tu TDEE y déficit con IA",
+                "name": "Mi Perfil y Metas",
+                "short_name": "Perfil",
+                "description": "Ajusta tus objetivos y déficit con IA",
                 "url": "/settings/",
-                "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png", "sizes": "192x192"}]
+                "icons": [{"src": "/static/icons/nutrix-icon-192.png", "sizes": "192x192", "type": "image/png"}]
             },
             {
                 "name": "Seguimiento de Peso",
                 "short_name": "Peso",
                 "description": "Registra tu peso de hoy",
                 "url": "/weight/",
-                "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png", "sizes": "192x192"}]
+                "icons": [{"src": "/static/icons/nutrix-icon-192.png", "sizes": "192x192", "type": "image/png"}]
             }
         ],
         "icons": [
             {
-                "src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png",
+                "src": "/static/icons/nutrix-icon-192.png",
                 "sizes": "192x192",
                 "type": "image/png",
                 "purpose": "any maskable"
             },
             {
-                "src": "https://cdn-icons-png.flaticon.com/512/3050/3050158.png",
+                "src": "/static/icons/nutrix-icon-512.png",
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "any maskable"
@@ -1219,13 +1245,13 @@ def service_worker_view(request):
     """Serve service worker with proper Service-Worker-Allowed header"""
     from django.http import HttpResponse
     sw_code = """
-const CACHE_NAME = 'deficit-tracker-v1';
+const CACHE_NAME = 'nutrix-v2';
 const STATIC_ASSETS = [
     '/manifest.json',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
-    'https://cdn-icons-png.flaticon.com/512/3050/3050158.png'
+    '/static/icons/nutrix-icon-192.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -1271,14 +1297,14 @@ self.addEventListener('fetch', (event) => {
                         <head>
                             <meta charset="UTF-8">
                             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <title>Sin Conexión | Déficit Tracker</title>
+                            <title>Sin Conexión | NutriX</title>
                             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
                         </head>
                         <body class="bg-dark text-light d-flex align-items-center justify-content-center min-vh-100 p-4 text-center">
                             <div>
                                 <h1 class="display-1 text-info fw-bold mb-3">📶</h1>
                                 <h3 class="fw-bold mb-2">Sin Conexión a Internet</h3>
-                                <p class="text-secondary mb-4">Verifica tu conexión wifi o datos móviles para continuar usando Déficit Tracker.</p>
+                                <p class="text-secondary mb-4">Verifica tu conexión wifi o datos móviles para continuar usando NutriX.</p>
                                 <button onclick="window.location.reload()" class="btn btn-primary px-4 py-2 fw-bold">Reintentar</button>
                             </div>
                         </body>
@@ -1375,7 +1401,7 @@ def passkey_register_options_view(request):
 
     options = generate_registration_options(
         rp_id=rp_id,
-        rp_name="NÜTRA • Déficit Calórico",
+        rp_name="NutriX • Déficit Calórico",
         user_id=user_handle,
         user_name=request.user.username,
         user_display_name=request.user.first_name or request.user.username,

@@ -3,10 +3,35 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Dark circular emblem -->
     <path
-        android:fillColor="#10B981"
-        android:pathData="M54,20 C54,20 34,42 34,60 C34,71.05 42.95,80 54,80 C65.05,80 74,71.05 74,60 C74,42 54,20 54,20 Z"/>
+        android:fillColor="#172116"
+        android:pathData="M51,51m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0"/>
+    <!-- Outlined Lime Leaf -->
     <path
-        android:fillColor="#38BDF8"
-        android:pathData="M54,42 C54,42 44,54 44,64 C44,69.52 48.48,74 54,74 C59.52,74 64,69.52 64,64 C64,54 54,42 54,42 Z"/>
+        android:fillColor="#00000000"
+        android:strokeColor="#b8f34a"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M41,61 C41,47 51,38 62,38 C62,49 53,61 41,61 Z"/>
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#b8f34a"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:pathData="M41,61 L57,43"/>
+    <!-- Bottom-right X badge with light ring -->
+    <path
+        android:fillColor="#eff2e9"
+        android:pathData="M72,70m-14.5,0a14.5,14.5 0,1 1,29 0a14.5,14.5 0,1 1,-29 0"/>
+    <path
+        android:fillColor="#b8f34a"
+        android:pathData="M72,70m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0"/>
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#10150f"
+        android:strokeWidth="2.9"
+        android:strokeLineCap="round"
+        android:pathData="M67.5,65.5 L76.5,74.5 M76.5,65.5 L67.5,74.5"/>
 </vector>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <circle cx="56" cy="56" r="46" fill="#172116"/>
+  <!-- Outlined Lime Leaf -->
+  <path d="M40 72C40 50 56 36 74 36C74 54 60 72 40 72Z" stroke="#b8f34a" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40 72L66 44" stroke="#b8f34a" stroke-width="4.2" stroke-linecap="round"/>
+  <!-- Bottom-right X badge -->
+  <circle cx="90" cy="88" r="20" fill="#b8f34a" stroke="#eff2e9" stroke-width="4"/>
+  <path d="M83 81L97 95M97 81L83 95" stroke="#10150f" stroke-width="4.4" stroke-linecap="round"/>
+</svg>

@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
                 allowContentAccess = true
                 loadsImagesAutomatically = true
                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                userAgentString = "${settings.userAgentString} DeficitTrackerApp/1.0.0 (Android)"
+                userAgentString = "${settings.userAgentString} NutriXApp/1.1.0 (Android)"
             }
 
             val cookieManager = CookieManager.getInstance()
@@ -205,10 +205,17 @@ class MainActivity : AppCompatActivity() {
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    finish()
+                webView.evaluateJavascript(
+                    "(function(){var openDlgs=Array.prototype.slice.call(document.querySelectorAll('dialog[open]'));if(openDlgs.length){openDlgs[openDlgs.length-1].close('cancel');return true;}return false;})()"
+                ) { result ->
+                    if (result == "true") {
+                        return@evaluateJavascript
+                    }
+                    if (webView.canGoBack()) {
+                        webView.goBack()
+                    } else {
+                        finish()
+                    }
                 }
             }
         })

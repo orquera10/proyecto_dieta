@@ -290,6 +290,7 @@ class PolishAndPasskeyTests(TestCase):
         login_res = self.client.get(reverse('login'))
         self.assertEqual(login_res.status_code, 200)
         self.assertContains(login_res, 'Volvé a tu balance.')
+        self.assertContains(login_res, 'Nutri<span')
         self.assertContains(login_res, 'autocomplete="username webauthn"')
         self.assertContains(login_res, 'id="btnPasskeySignIn"')
         self.assertNotContains(login_res, 'class="glass-nav"')
@@ -297,12 +298,20 @@ class PolishAndPasskeyTests(TestCase):
         register_res = self.client.get(reverse('register'))
         self.assertEqual(register_res.status_code, 200)
         self.assertContains(register_res, 'Creá tu cuenta.')
+        self.assertContains(register_res, 'NutriX')
         self.assertNotContains(register_res, 'class="glass-nav"')
+
+        manifest_res = self.client.get(reverse('manifest'))
+        self.assertEqual(manifest_res.status_code, 200)
+        manifest_data = manifest_res.json()
+        self.assertEqual(manifest_data['short_name'], 'NutriX')
+        self.assertEqual(manifest_data['name'], 'NutriX')
 
     def test_dashboard_native_dialogs_and_no_legacy_backdrop(self):
         self.client.login(username='biouser', password='password123')
         dash_res = self.client.get(reverse('dashboard'))
         self.assertEqual(dash_res.status_code, 200)
+        self.assertContains(dash_res, 'class="nutrix-week-strip"')
         self.assertContains(dash_res, '<dialog class="nutra-bottom-sheet" id="assistantSheet" closedby="any"')
         self.assertContains(dash_res, '<dialog id="cameraViewfinderModal"')
         self.assertNotContains(dash_res, 'id="sheetBackdrop"')
