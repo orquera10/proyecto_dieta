@@ -372,5 +372,24 @@ class PolishAndPasskeyTests(TestCase):
         self.assertEqual(past_res.status_code, 200)
         self.assertContains(past_res, 'Salmón histórico')
         self.assertContains(past_res, 'Volver a hoy')
+        self.assertContains(past_res, 'id="btnClearDayMeals"')
+        self.assertContains(past_res, 'id="nutraSystemDialog"')
+
+        # Empty today should not render btnClearDayMeals
+        self.assertNotContains(today_res, 'id="btnClearDayMeals"')
+
+        # Also add an entry today to make sure deleting yesterday doesn't delete today
+        MealEntry.objects.create(
+            user=self.user,
+            food_item=food,
+            meal_type='almuerzo',
+            date=timezone.localdate(),
+            grams_or_amount=Decimal('100.0'),
+        )
+        del_res = self.client.post(reverse('delete_day_entries', args=[yesterday.strftime('%Y-%m-%d')]))
+        self.assertEqual(del_res.status_code, 302)
+        self.assertEqual(MealEntry.objects.filter(user=self.user, date=yesterday).count(), 0)
+        self.assertEqual(MealEntry.objects.filter(user=self.user, date=timezone.localdate()).count(), 1)
+
 
 

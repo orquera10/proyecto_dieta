@@ -448,7 +448,7 @@
                     <strong class="d-block text-truncate" style="font-size: 0.9rem; color: #172116;">{{ pk.name }}</strong>
                     <span style="font-size: 0.75rem; color: #879482;">Registrada el {{ pk.created_at|date:"d/m/Y" }}</span>
                 </div>
-                <form method="post" action="{% url 'passkey_delete' pk.id %}" style="margin: 0;" onsubmit="return confirm('¿Eliminar esta huella de tu cuenta?');">
+                <form method="post" action="{% url 'passkey_delete' pk.id %}" style="margin: 0;" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar huella / passkey?', message: 'Ya no vas a poder usar esta huella en este dispositivo salvo que vuelvas a vincularla.', confirmText: 'Eliminar huella', tone: 'danger' });">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm rounded-circle text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none;" title="Eliminar passkey">
                         <i class="fa-solid fa-trash-can"></i>

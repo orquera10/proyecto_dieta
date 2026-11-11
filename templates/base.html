@@ -446,6 +446,67 @@
         [aria-expanded="false"] .chevron-rotate {
             transform: rotate(-90deg);
         }
+
+        /* Global NÜTRA Modal Dialog (replaces native browser alert/confirm) */
+        dialog.nutra-sys-dialog {
+            border: 1px solid rgba(184, 243, 74, 0.22);
+            border-radius: 26px;
+            background: #172116;
+            color: #f4f7ef;
+            padding: 24px 22px 22px;
+            width: calc(100vw - 32px);
+            max-width: 390px;
+            margin: auto;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.58);
+            overscroll-behavior: contain;
+            font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+        }
+        dialog.nutra-sys-dialog::backdrop {
+            background: rgba(16, 21, 15, 0.68);
+            backdrop-filter: blur(6px);
+            overflow: hidden;
+            overscroll-behavior: contain;
+        }
+        .nutra-sys-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+        .nutra-sys-btn-primary {
+            flex: 1;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            background: #b8f34a;
+            color: #10150f;
+            cursor: pointer;
+            transition: transform 0.12s ease, opacity 0.15s ease;
+        }
+        .nutra-sys-btn-primary.danger {
+            background: #ef4444;
+            color: #ffffff;
+        }
+        .nutra-sys-btn-primary:active {
+            transform: scale(0.97);
+        }
+        .nutra-sys-btn-secondary {
+            flex: 1;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.06);
+            color: #d8e0d2;
+            cursor: pointer;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -804,6 +865,23 @@
     </footer>
     {% endif %}
 
+    <!-- Reusable NÜTRA System Alert / Confirm Dialog -->
+    <dialog id="nutraSystemDialog" class="nutra-sys-dialog" closedby="any" aria-labelledby="nutraSysTitle" aria-describedby="nutraSysMessage">
+        <div class="d-flex align-items-start gap-3 mb-3">
+            <div id="nutraSysIcon" class="nutra-sys-icon" style="background: rgba(184, 243, 74, 0.14); color: #b8f34a;">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <div class="flex-grow-1" style="min-width: 0;">
+                <h3 id="nutraSysTitle" style="font-size: 1.08rem; font-weight: 800; color: #ffffff; margin: 0 0 6px; letter-spacing: -0.02em;">Aviso</h3>
+                <p id="nutraSysMessage" style="font-size: 0.88rem; color: #b9c5b2; margin: 0; line-height: 1.48;"></p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-4">
+            <button type="button" id="nutraSysCancelBtn" class="nutra-sys-btn-secondary d-none">Cancelar</button>
+            <button type="button" id="nutraSysConfirmBtn" class="nutra-sys-btn-primary">Entendido</button>
+        </div>
+    </dialog>
+
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Chart.js -->
@@ -816,6 +894,128 @@
             const cookieValue = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
             return cookieValue || '';
         }
+
+        // Global NÜTRA Modal Engine (replaces browser alert/confirm)
+        (function() {
+            let activeResolve = null;
+
+            function configureSystemDialog({ title, message, tone = 'info', confirmText = 'Entendido', cancelText = 'Cancelar', showCancel = false }) {
+                const dlg = document.getElementById('nutraSystemDialog');
+                if (!dlg) return Promise.resolve(false);
+
+                const iconEl = document.getElementById('nutraSysIcon');
+                const titleEl = document.getElementById('nutraSysTitle');
+                const msgEl = document.getElementById('nutraSysMessage');
+                const cancelBtn = document.getElementById('nutraSysCancelBtn');
+                const confirmBtn = document.getElementById('nutraSysConfirmBtn');
+
+                titleEl.textContent = title || (showCancel ? 'Confirmar acción' : 'Aviso');
+                msgEl.textContent = message || '';
+
+                confirmBtn.textContent = confirmText || (showCancel ? 'Confirmar' : 'Entendido');
+                confirmBtn.classList.toggle('danger', tone === 'danger');
+
+                cancelBtn.textContent = cancelText || 'Cancelar';
+                cancelBtn.classList.toggle('d-none', !showCancel);
+
+                if (tone === 'danger') {
+                    iconEl.style.background = 'rgba(239, 68, 68, 0.16)';
+                    iconEl.style.color = '#fca5a5';
+                    iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                    dlg.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+                } else if (tone === 'warning') {
+                    iconEl.style.background = 'rgba(245, 158, 11, 0.18)';
+                    iconEl.style.color = '#fcd34d';
+                    iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+                    dlg.style.borderColor = 'rgba(245, 158, 11, 0.32)';
+                } else {
+                    iconEl.style.background = 'rgba(184, 243, 74, 0.16)';
+                    iconEl.style.color = '#b8f34a';
+                    iconEl.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>';
+                    dlg.style.borderColor = 'rgba(184, 243, 74, 0.25)';
+                }
+
+                if (activeResolve) {
+                    const prev = activeResolve;
+                    activeResolve = null;
+                    prev(false);
+                }
+                if (dlg.open) dlg.close('reset');
+
+                return new Promise((resolve) => {
+                    activeResolve = resolve;
+                    confirmBtn.onclick = () => dlg.close('ok');
+                    cancelBtn.onclick = () => dlg.close('cancel');
+                    dlg.returnValue = '';
+                    dlg.showModal();
+                    if (typeof window.pushModalHistory === 'function') {
+                        window.pushModalHistory('nutraSystemDialog');
+                    }
+                    confirmBtn.focus({ preventScroll: true });
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const dlg = document.getElementById('nutraSystemDialog');
+                if (!dlg) return;
+                dlg.addEventListener('click', (e) => {
+                    if (e.target !== dlg) return;
+                    const rect = dlg.getBoundingClientRect();
+                    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+                        dlg.close('cancel');
+                    }
+                });
+                dlg.addEventListener('close', () => {
+                    if (typeof window.popModalHistoryIfActive === 'function') {
+                        window.popModalHistoryIfActive('nutraSystemDialog');
+                    }
+                    if (activeResolve) {
+                        const res = activeResolve;
+                        activeResolve = null;
+                        res(dlg.returnValue === 'ok');
+                    }
+                });
+            });
+
+            window.nutraAlert = function(optsOrMsg, defaultTitle = 'Aviso') {
+                const opts = (typeof optsOrMsg === 'string')
+                    ? { title: defaultTitle, message: optsOrMsg, tone: 'info' }
+                    : (optsOrMsg || {});
+                return configureSystemDialog({
+                    title: opts.title || defaultTitle,
+                    message: opts.message || '',
+                    tone: opts.tone || 'warning',
+                    confirmText: opts.confirmText || 'Entendido',
+                    showCancel: false
+                }).then(() => undefined);
+            };
+
+            window.nutraConfirm = function(optsOrMsg) {
+                const opts = (typeof optsOrMsg === 'string')
+                    ? { title: 'Confirmar acción', message: optsOrMsg, tone: 'danger' }
+                    : (optsOrMsg || {});
+                return configureSystemDialog({
+                    title: opts.title || 'Confirmar acción',
+                    message: opts.message || '',
+                    tone: opts.tone || 'danger',
+                    confirmText: opts.confirmText || 'Confirmar',
+                    cancelText: opts.cancelText || 'Cancelar',
+                    showCancel: true
+                });
+            };
+
+            window.nutraConfirmForm = function(event, optsOrMsg) {
+                if (event) event.preventDefault();
+                const form = (event && event.target) ? event.target.closest('form') : null;
+                if (!form) return false;
+                window.nutraConfirm(optsOrMsg).then((confirmed) => {
+                    if (confirmed) {
+                        HTMLFormElement.prototype.submit.call(form);
+                    }
+                });
+                return false;
+            };
+        })();
 
         function handleGlobalFabClick() {
             if (typeof openQuickAddModal === 'function') {
@@ -861,7 +1061,7 @@
         function toggleGlobalVoice() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
-                alert("El reconocimiento de voz web no está disponible en este navegador. Puedes escribir o usar el dictado por voz de tu teclado.");
+                nutraAlert({ title: 'Dictado no disponible', message: 'El reconocimiento de voz web no está disponible en este navegador. Puedes escribir o usar el dictado por voz de tu teclado.', tone: 'info' });
                 return;
             }
             if (!globalSpeechRec) {
@@ -899,7 +1099,7 @@
             if (!file) return;
 
             if (file.size > 10 * 1024 * 1024) {
-                alert("La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.");
+                nutraAlert({ title: 'Archivo demasiado grande', message: 'La foto es demasiado pesada (máx 10MB). Por favor selecciona otra.', tone: 'warning' });
                 event.target.value = '';
                 return;
             }
@@ -957,7 +1157,7 @@
             const btn = document.getElementById('btnSubmitGlobalAi');
 
             if (!text && !currentGlobalAiPhoto) {
-                alert('Por favor escribe lo que comiste o toma una foto para que Gemini la analice.');
+                nutraAlert({ title: 'Faltan datos', message: 'Por favor escribe lo que comiste o toma una foto para que Gemini la analice.', tone: 'warning' });
                 input?.focus();
                 return;
             }
@@ -990,10 +1190,10 @@
                         window.location.href = '{% url "dashboard" %}?date=' + (date || data.date);
                     }
                 } else {
-                    alert('Error de IA: ' + (data.error || 'No se pudo analizar la comida.'));
+                    nutraAlert({ title: 'No se pudo analizar', message: data.error || 'No se pudo analizar la comida.', tone: 'warning' });
                 }
             } catch (e) {
-                alert('Error al comunicarse con el servidor: ' + e);
+                nutraAlert({ title: 'Error de conexión', message: 'Error al comunicarse con el servidor: ' + e, tone: 'danger' });
             } finally {
                 btn.disabled = false;
                 spinner.classList.add('d-none');
@@ -1007,7 +1207,7 @@
             const resCard = document.getElementById('globalConsultResult');
 
             if (!query) {
-                alert('Por favor escribe el nombre de un alimento.');
+                nutraAlert({ title: 'Escribí un alimento', message: 'Por favor escribe el nombre de un alimento.', tone: 'info' });
                 input?.focus();
                 return;
             }
@@ -1036,10 +1236,10 @@
                     document.getElementById('consultFat').innerText = data.fat + 'g';
                     resCard.classList.remove('d-none');
                 } else {
-                    alert('Error al consultar: ' + (data.error || 'No se obtuvieron resultados.'));
+                    nutraAlert({ title: 'Sin resultados', message: data.error || 'No se obtuvieron resultados.', tone: 'warning' });
                 }
             } catch (e) {
-                alert('Error: ' + e);
+                nutraAlert({ title: 'Error de conexión', message: 'Ocurrió un problema: ' + e, tone: 'danger' });
             } finally {
                 spinner.classList.add('d-none');
             }

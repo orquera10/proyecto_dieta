@@ -463,6 +463,7 @@ def dashboard_view(request):
         'weight_points': weight_points,
         'recent_weight_entries': recent_weight_entries,
         'pending_meal_code': get_next_pending_meal([m['code'] for m in meals_data if m['has_entries']]),
+        'has_day_entries': any(m['has_entries'] for m in meals_data),
         'active_tab': request.GET.get('tab', 'today'),
     }
     return render(request, 'tracker/dashboard.html', context)
@@ -499,6 +500,21 @@ def delete_meal_entry(request, pk):
         entry.delete()
         messages.info(request, "Comida eliminada del registro.")
     return redirect(f"/dashboard/?date={date_str}")
+
+
+@login_required
+def delete_day_entries_view(request, date_str):
+    """Elimina todos los registros de comidas de un usuario para una fecha específica."""
+    try:
+        target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        deleted_count, _ = MealEntry.objects.filter(user=request.user, date=target_date).delete()
+        if deleted_count > 0:
+            messages.info(request, f"Se eliminaron {deleted_count} registro(s) del {target_date.strftime('%d/%m/%Y')}.")
+    return redirect(f"/dashboard/?date={target_date.strftime('%Y-%m-%d')}")
 
 
 @login_required

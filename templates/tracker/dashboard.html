@@ -656,11 +656,22 @@
         </div>
 
         <!-- Section: Tus Comidas -->
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 gap-2">
             <h2 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.04em; margin: 0; color: #172116;">Tus comidas</h2>
-            <button type="button" class="btn btn-sm fw-bold p-0 text-dark" onclick="openQuickAddModal('almuerzo', 'Almuerzo')" style="font-size: 0.9rem;">
-                + Agregar
-            </button>
+            <div class="d-flex align-items-center gap-3">
+                {% if has_day_entries %}
+                <form method="post" action="{% url 'delete_day_entries' selected_date|date:'Y-m-d' %}" class="m-0" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar registro del día?', message: 'Se borrarán todas las comidas cargadas del {{ selected_date|date:'d/m/Y' }}. Esta acción no se puede deshacer.', confirmText: 'Vaciar día', tone: 'danger' });">
+                    {% csrf_token %}
+                    <button type="submit" id="btnClearDayMeals" class="btn btn-sm fw-bold p-0 d-inline-flex align-items-center gap-1" style="font-size: 0.82rem; color: #b91c1c; border: none; background: transparent;">
+                        <i class="fa-regular fa-trash-can" style="font-size: 0.78rem;"></i>
+                        <span>Vaciar día</span>
+                    </button>
+                </form>
+                {% endif %}
+                <button type="button" class="btn btn-sm fw-bold p-0 text-dark" onclick="openQuickAddModal('almuerzo', 'Almuerzo')" style="font-size: 0.9rem;">
+                    + Agregar
+                </button>
+            </div>
         </div>
 
         <div class="meal-list-container">
@@ -1416,6 +1427,13 @@
             ignorePopstateCount--;
             return;
         }
+        const sysDlg = document.getElementById('nutraSystemDialog');
+        if (sysDlg && sysDlg.open) {
+            isClosingViaPopstate = true;
+            sysDlg.close('cancel');
+            isClosingViaPopstate = false;
+            return;
+        }
         const camDlg = document.getElementById('cameraViewfinderModal');
         if (camDlg && camDlg.open) {
             closeDialogSafely('cameraViewfinderModal', true);
@@ -1496,7 +1514,7 @@
                                 P: ${Math.round(e.protein)}g • C: ${Math.round(e.carbs)}g • G: ${Math.round(e.fat)}g
                             </div>
                         </div>
-                        <form method="post" action="/meal/delete/${e.id}/" style="margin: 0;" onsubmit="return confirm('¿Seguro que deseas eliminar este alimento?');">
+                        <form method="post" action="/meal/delete/${e.id}/" style="margin: 0;" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar alimento?', message: 'Se quitará este alimento del registro del día.', confirmText: 'Eliminar', tone: 'danger' });">
                             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                             <button type="submit" class="btn btn-sm rounded-circle p-2 text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none; display: flex; align-items: center; justify-content: center;" title="Eliminar alimento">
                                 <i class="fa-solid fa-trash-can"></i>
@@ -1619,10 +1637,10 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('Error al registrar comida: ' + (data.error || 'Intente nuevamente'));
+                nutraAlert({ title: 'No se pudo registrar', message: data.error || 'Intente nuevamente.', tone: 'warning' });
             }
         } catch (e) {
-            alert('Error de conexión: ' + e);
+            nutraAlert({ title: 'Error de conexión', message: 'Error de conexión: ' + e, tone: 'danger' });
         }
     }
 
@@ -1831,7 +1849,7 @@
     function triggerNutraAudio() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRec) {
-            alert('El dictado por voz no está soportado en este navegador web. Podés usar el teclado o la cámara.');
+            nutraAlert({ title: 'Dictado no disponible', message: 'El dictado por voz no está soportado en este navegador web. Podés usar el teclado o la cámara.', tone: 'info' });
             showNutraTextInput();
             return;
         }
@@ -1877,7 +1895,7 @@
         const text = input ? input.value.trim() : '';
 
         if (!text && !nutraPhotoB64) {
-            alert('Por favor describe lo que comiste o saca una foto para que la IA lo analice.');
+            nutraAlert({ title: 'Falta tu comida', message: 'Por favor describí lo que comiste o sacá una foto para que la IA lo analice.', tone: 'warning' });
             return;
         }
 
@@ -1907,10 +1925,10 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('IA: ' + (data.error || 'No se pudo interpretar el plato.'));
+                nutraAlert({ title: 'No se pudo analizar', message: data.error || 'No se pudo interpretar el plato.', tone: 'warning' });
             }
         } catch (e) {
-            alert('Error al comunicarse con el servidor: ' + e);
+            nutraAlert({ title: 'Error de conexión', message: 'Error al comunicarse con el servidor: ' + e, tone: 'danger' });
         } finally {
             btn.disabled = false;
             spinner.classList.add('d-none');
@@ -2020,10 +2038,10 @@
                 }
                 resultsBox.classList.remove('d-none');
             } else {
-                alert('IA: ' + (data.error || 'No se pudo obtener una recomendación.'));
+                nutraAlert({ title: 'No se pudo consultar', message: data.error || 'No se pudo obtener una recomendación.', tone: 'warning' });
             }
         } catch (e) {
-            alert('Error de conexión: ' + e);
+            nutraAlert({ title: 'Error de conexión', message: 'Error de conexión: ' + e, tone: 'danger' });
         } finally {
             btn.disabled = false;
             spinner.classList.add('d-none');
@@ -2060,14 +2078,14 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('Error al registrar: ' + (data.error || 'Intente nuevamente'));
+                nutraAlert({ title: 'No se pudo registrar', message: data.error || 'Intente nuevamente.', tone: 'warning' });
                 if (btnEl) {
                     btnEl.disabled = false;
                     btnEl.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Registrar en mi día';
                 }
             }
         } catch (e) {
-            alert('Error de conexión: ' + e);
+            nutraAlert({ title: 'Error de conexión', message: 'Error de conexión: ' + e, tone: 'danger' });
             if (btnEl) {
                 btnEl.disabled = false;
                 btnEl.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Registrar en mi día';

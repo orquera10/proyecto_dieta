@@ -173,7 +173,7 @@
         const btn = document.getElementById('btnRunAiFood');
 
         if (!query) {
-            alert('Por favor escribe el nombre de un alimento para autocompletar.');
+            nutraAlert({ title: 'Escribí un alimento', message: 'Por favor escribe el nombre de un alimento para autocompletar.', tone: 'info' });
             document.getElementById('aiFoodSearchInput').focus();
             return;
         }
@@ -219,10 +219,10 @@
                     }
                 });
             } else {
-                alert('No se pudo estimar con IA: ' + (data.error || 'Error desconocido'));
+                nutraAlert({ title: 'No se pudo estimar', message: data.error || 'Error desconocido al calcular valores nutricionales.', tone: 'warning' });
             }
         } catch (e) {
-            alert('Error al conectar con la IA: ' + e);
+            nutraAlert({ title: 'Error de conexión', message: 'Error al conectar con la IA: ' + e, tone: 'danger' });
         } finally {
             btn.disabled = false;
             spinner.classList.add('d-none');

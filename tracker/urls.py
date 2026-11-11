@@ -8,6 +8,7 @@ urlpatterns = [
     path('onboarding/', views.onboarding_view, name='onboarding'),
     path('meal/add/', views.add_meal_entry, name='add_meal_entry'),
     path('meal/delete/<int:pk>/', views.delete_meal_entry, name='delete_meal_entry'),
+    path('day/delete/<str:date_str>/', views.delete_day_entries_view, name='delete_day_entries'),
     path('meal/photo/<int:entry_id>/', views.meal_photo_view, name='meal_photo'),
     path('food/photo/<int:food_id>/', views.food_photo_view, name='food_photo'),
     path('foods/', views.food_list_view, name='food_list'),
