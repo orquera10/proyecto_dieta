@@ -507,6 +507,54 @@
             color: #d8e0d2;
             cursor: pointer;
         }
+
+        /* Unified perfectly round modal close button */
+        .nutra-modal-close {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+            aspect-ratio: 1 / 1;
+            border-radius: 50% !important;
+            background: rgba(23, 33, 22, 0.08);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #172116;
+            padding: 0;
+            margin: 0;
+            transition: background 0.15s ease, transform 0.15s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+            line-height: 1;
+            text-decoration: none;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nutra-modal-close:hover,
+        .nutra-modal-close:focus-visible {
+            background: rgba(23, 33, 22, 0.14);
+            color: #172116;
+            transform: scale(1.06);
+        }
+        .nutra-modal-close:active {
+            transform: scale(0.92);
+        }
+        .nutra-modal-close i {
+            font-size: 0.95rem;
+            line-height: 1;
+            display: block;
+        }
+        .nutra-modal-close.dark {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+        }
+        .nutra-modal-close.dark:hover,
+        .nutra-modal-close.dark:focus-visible {
+            background: rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -657,7 +705,9 @@
                             <span class="text-secondary small" style="font-size: 0.75rem;">Control de comidas, cálculo de déficit y consulta nutricional</span>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="nutra-modal-close dark" data-bs-dismiss="modal" aria-label="Cerrar modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
                 <div class="modal-body p-3 p-md-4">
                     <!-- Nav Tabs -->

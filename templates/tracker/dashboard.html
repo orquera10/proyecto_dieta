@@ -995,8 +995,8 @@
         <div id="mealDetailBadge" style="width: 38px; height: 38px; background: #172116; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ffffff;">
             <i class="fa-solid fa-utensils fs-6"></i>
         </div>
-        <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeMealDetailModal()">
-            <i class="fa-solid fa-xmark text-dark"></i>
+        <button type="button" class="nutra-modal-close" onclick="closeMealDetailModal()" aria-label="Cerrar detalle">
+            <i class="fa-solid fa-xmark"></i>
         </button>
     </div>
 
@@ -1067,14 +1067,34 @@
         <div style="width: 38px; height: 38px; background: #172116; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ffffff;">
             <i class="fa-solid fa-plus fs-6"></i>
         </div>
-        <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeQuickAddModal()">
+        <button type="button" class="nutra-modal-close" onclick="closeQuickAddModal()" aria-label="Cerrar agregar comida">
             <i class="fa-solid fa-xmark text-dark"></i>
         </button>
     </div>
 
-    <h2 style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 16px;">
+    <h2 style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 12px;">
         Agregar una comida
     </h2>
+
+    <!-- Acceso destacado superior: Registrar con IA -->
+    <div class="mb-3">
+        <button type="button" class="btn w-100 p-3 rounded-4 d-flex align-items-center justify-content-between text-start" style="background: linear-gradient(135deg, #172116 0%, #20311f 100%); color: #ffffff; border: 1.5px solid rgba(184, 243, 74, 0.35); box-shadow: 0 4px 16px rgba(23, 33, 22, 0.12);" onclick="switchToAssistantFromQuickAdd()">
+            <div class="d-flex align-items-center gap-2.5">
+                <div style="width: 36px; height: 36px; border-radius: 12px; background: rgba(184, 243, 74, 0.18); display: flex; align-items: center; justify-content: center; color: #b8f34a; flex-shrink: 0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <strong class="d-block" style="font-size: 0.96rem; color: #ffffff; line-height: 1.25;">Prefiero registrarlo con IA</strong>
+                    <span style="font-size: 0.76rem; color: #a3b89b; font-weight: 600;">Foto de tu plato, dictado o texto rápido</span>
+                </div>
+            </div>
+            <span class="badge rounded-pill px-2.5 py-1.5" style="background: #b8f34a; color: #172116; font-weight: 800; font-size: 0.74rem;">
+                Abrir <i class="fa-solid fa-arrow-right ms-1"></i>
+            </span>
+        </button>
+    </div>
 
     <!-- Momento del Día -->
     <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
@@ -1123,26 +1143,16 @@
     </div>
 
     <!-- Botón Agregar Alimento -->
-    <button type="button" id="btnCustomFoodAdd" class="btn w-100 py-3 rounded-4 fw-bold mb-3" style="background: #8b9485; color: #ffffff; font-size: 0.95rem;" onclick="handleCustomFoodSubmit()">
+    <button type="button" id="btnCustomFoodAdd" class="btn w-100 py-3 rounded-4 fw-bold mb-2" style="background: #8b9485; color: #ffffff; font-size: 0.95rem;" onclick="handleCustomFoodSubmit()">
         + Agregar alimento
     </button>
-
-    <!-- Link Registrar con IA -->
-    <div class="text-center pt-1 mb-2">
-        <button type="button" class="btn btn-link text-decoration-none fw-bold p-0" style="color: #4a6823; font-size: 0.92rem;" onclick="switchToAssistantFromQuickAdd()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#4a6823" class="me-1" style="vertical-align: -2px;">
-                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-            </svg>
-            Prefiero registrarlo con IA
-        </button>
-    </div>
 </dialog>
 
 <!-- BOTTOM SHEET 2: ASISTENTE IA (<dialog> nativo top-layer) -->
 <dialog class="nutra-bottom-sheet" id="assistantSheet" closedby="any">
     <div class="d-flex align-items-center justify-content-between mb-4">
         {% include "tracker/_nutrix_logo.html" with emblem_only=True icon_size="40" %}
-        <button type="button" class="btn btn-sm rounded-circle p-1" style="background: rgba(23,33,22,0.06); width: 32px; height: 32px;" onclick="closeAssistantModal()">
+        <button type="button" class="nutra-modal-close" onclick="closeAssistantModal()" aria-label="Cerrar asistente">
             <i class="fa-solid fa-xmark text-dark"></i>
         </button>
     </div>
@@ -1257,7 +1267,7 @@
                 <i class="fa-regular fa-lightbulb" style="color: #4e7110;"></i>
                 <strong style="font-size: 0.94rem; color: #172116;">Consultar sobre comida</strong>
             </div>
-            <button type="button" class="btn btn-sm rounded-circle p-0 text-muted" style="width: 28px; height: 28px; background: rgba(23,33,22,0.05);" onclick="hideNutraAdvisor()">
+            <button type="button" class="nutra-modal-close" style="width: 30px; height: 30px;" onclick="hideNutraAdvisor()" aria-label="Cerrar consulta">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -1328,12 +1338,12 @@
 <!-- IN-APP LIVE CAMERA VIEWFINDER MODAL (<dialog> nativo) -->
 <dialog id="cameraViewfinderModal" class="nutra-camera-viewfinder" closedby="any">
     <div class="camera-top-bar">
-        <button type="button" class="btn btn-dark rounded-circle p-2" onclick="closeCameraViewfinder()" style="width: 42px; height: 42px; background: rgba(0,0,0,0.55); border: none;">
-            <i class="fa-solid fa-xmark text-white fs-5"></i>
+        <button type="button" class="nutra-modal-close dark" onclick="closeCameraViewfinder()" style="width: 42px; height: 42px;" aria-label="Cerrar cámara">
+            <i class="fa-solid fa-xmark fs-5"></i>
         </button>
         <span class="text-white fw-bold small">Enfocá tu plato</span>
-        <button type="button" class="btn btn-dark rounded-circle p-2" onclick="flipCamera()" style="width: 42px; height: 42px; background: rgba(0,0,0,0.55); border: none;">
-            <i class="fa-solid fa-camera-rotate text-white"></i>
+        <button type="button" class="nutra-modal-close dark" onclick="flipCamera()" style="width: 42px; height: 42px;" aria-label="Girar cámara">
+            <i class="fa-solid fa-camera-rotate"></i>
         </button>
     </div>
 
@@ -1359,7 +1369,9 @@
         <div class="modal-content rounded-4 border-0 p-3" style="background: #ffffff; color: #172116;">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="fw-black m-0" style="font-weight: 900;">Registrar peso semanal</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="nutra-modal-close" data-bs-dismiss="modal" aria-label="Cerrar modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             <form method="post" action="{% url 'weight_tracker' %}">
                 {% csrf_token %}

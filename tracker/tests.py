@@ -422,6 +422,27 @@ class PolishAndPasskeyTests(TestCase):
         self.assertEqual(dup_res.status_code, 200)
         self.assertContains(dup_res, 'Ese nombre de usuario ya está registrado')
 
+    def test_modal_round_close_and_top_ia_button(self):
+        self.client.login(username='biouser', password='password123')
+        res = self.client.get(reverse('dashboard'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+
+        # Check round close class is used
+        self.assertIn('class="nutra-modal-close"', html)
+        self.assertNotIn('class="btn-close"', html)
+
+        # Check 'Prefiero registrarlo con IA' is at the top of quickAddSheet (before search input)
+        idx_quick_add = html.find('id="quickAddSheet"')
+        self.assertNotEqual(idx_quick_add, -1)
+        idx_ia_btn = html.find('Prefiero registrarlo con IA', idx_quick_add)
+        idx_search_input = html.find('id="quickFoodSearchInput"', idx_quick_add)
+
+        self.assertNotEqual(idx_ia_btn, -1)
+        self.assertNotEqual(idx_search_input, -1)
+        self.assertLess(idx_ia_btn, idx_search_input, "IA button must be located above the food search input in quickAddSheet")
+
+
 
 
 
