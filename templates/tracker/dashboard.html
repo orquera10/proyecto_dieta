@@ -492,22 +492,99 @@
     /* Moment of the day selector pills */
     .meal-moment-pill, .assistant-moment-pill {
         border-radius: 999px;
-        padding: 7px 14px;
-        font-size: 0.8rem;
+        padding: 9px 18px;
+        font-size: 0.84rem;
         font-weight: 700;
         background: #ffffff;
-        border: 1px solid rgba(23, 33, 22, 0.14);
-        color: #172116;
+        border: 1.5px solid rgba(23, 33, 22, 0.12);
+        color: #4a5a46;
         cursor: pointer;
         white-space: nowrap;
-        transition: all 0.15s ease;
+        transition: all 0.18s ease;
         text-align: center;
         flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .meal-moment-pill:hover, .assistant-moment-pill:hover {
+        border-color: rgba(23, 33, 22, 0.28);
+        color: #172116;
     }
     .meal-moment-pill.active, .assistant-moment-pill.active {
         background: #172116 !important;
         color: #ffffff !important;
         border-color: #172116 !important;
+        box-shadow: 0 3px 10px rgba(23, 33, 22, 0.18);
+    }
+
+    /* Hero IA Card & Action Buttons */
+    .nutra-ai-hero-card {
+        background: #172116;
+        background-image: radial-gradient(circle at 92% 12%, rgba(184, 243, 74, 0.22) 0%, transparent 55%),
+                          radial-gradient(circle at 10% 90%, rgba(56, 189, 248, 0.12) 0%, transparent 50%);
+        border: 1.5px solid rgba(184, 243, 74, 0.28);
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 22px;
+        box-shadow: 0 10px 28px rgba(23, 33, 22, 0.14);
+    }
+    .nutra-ai-btn-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+    }
+    .nutra-ai-action-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 16px 8px 14px 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: #ffffff;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        width: 100%;
+        text-decoration: none;
+    }
+    .nutra-ai-action-btn:hover {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(184, 243, 74, 0.5);
+        transform: translateY(-2px);
+    }
+    .nutra-ai-action-btn:active {
+        transform: scale(0.95);
+        background: rgba(184, 243, 74, 0.18);
+    }
+    .nutra-ai-action-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+    }
+    .nutra-ai-action-icon.camera {
+        background: rgba(184, 243, 74, 0.22);
+        color: #b8f34a;
+    }
+    .nutra-ai-action-icon.audio {
+        background: rgba(56, 189, 248, 0.2);
+        color: #38bdf8;
+    }
+    .nutra-ai-action-icon.text {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+    }
+    .nutra-ai-action-label {
+        font-size: 0.84rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #ffffff;
     }
     .btn-quick-add-plus {
         width: 36px;
@@ -1072,35 +1149,15 @@
         </button>
     </div>
 
-    <h2 style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 12px;">
+    <h2 style="font-size: 1.65rem; font-weight: 900; letter-spacing: -0.04em; color: #172116; margin-bottom: 16px;">
         Agregar una comida
     </h2>
 
-    <!-- Acceso destacado superior: Registrar con IA -->
-    <div class="mb-3">
-        <button type="button" class="btn w-100 p-3 rounded-4 d-flex align-items-center justify-content-between text-start" style="background: linear-gradient(135deg, #172116 0%, #20311f 100%); color: #ffffff; border: 1.5px solid rgba(184, 243, 74, 0.35); box-shadow: 0 4px 16px rgba(23, 33, 22, 0.12);" onclick="switchToAssistantFromQuickAdd()">
-            <div class="d-flex align-items-center gap-2.5">
-                <div style="width: 36px; height: 36px; border-radius: 12px; background: rgba(184, 243, 74, 0.18); display: flex; align-items: center; justify-content: center; color: #b8f34a; flex-shrink: 0;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-                    </svg>
-                </div>
-                <div>
-                    <strong class="d-block" style="font-size: 0.96rem; color: #ffffff; line-height: 1.25;">Prefiero registrarlo con IA</strong>
-                    <span style="font-size: 0.76rem; color: #a3b89b; font-weight: 600;">Foto de tu plato, dictado o texto rápido</span>
-                </div>
-            </div>
-            <span class="badge rounded-pill px-2.5 py-1.5" style="background: #b8f34a; color: #172116; font-weight: 800; font-size: 0.74rem;">
-                Abrir <i class="fa-solid fa-arrow-right ms-1"></i>
-            </span>
-        </button>
-    </div>
-
     <!-- Momento del Día -->
-    <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
+    <div style="font-size: 0.74rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #879482; margin-bottom: 10px;">
         MOMENTO DEL DÍA
     </div>
-    <div class="d-flex align-items-center flex-wrap gap-2 pb-1 mb-3">
+    <div class="d-flex align-items-center gap-2 pb-2 mb-3" style="overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
         <button type="button" class="meal-moment-pill" data-meal="desayuno" onclick="selectQuickAddMeal('desayuno')">Desayuno</button>
         <button type="button" class="meal-moment-pill active" data-meal="almuerzo" onclick="selectQuickAddMeal('almuerzo')">Almuerzo</button>
         <button type="button" class="meal-moment-pill" data-meal="merienda" onclick="selectQuickAddMeal('merienda')">Merienda</button>
@@ -1108,15 +1165,68 @@
         <button type="button" class="meal-moment-pill" data-meal="snack" onclick="selectQuickAddMeal('snack')">Snack</button>
     </div>
 
-    <!-- Buscar alimento -->
-    <div style="font-size: 0.85rem; font-weight: 700; color: #6d7b68; margin-bottom: 6px;">
-        Buscar alimento
+    <!-- TARJETA DESTACADA IA CON BOTONES DE ACCIÓN DIRECTA -->
+    <div class="nutra-ai-hero-card">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center" style="gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(184, 243, 74, 0.2); display: flex; align-items: center; justify-content: center; color: #b8f34a; flex-shrink: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.05rem; font-weight: 900; color: #ffffff; margin: 0; line-height: 1.2;">Prefiero registrarlo con IA</h3>
+                    <span style="font-size: 0.78rem; color: #a9bea2; font-weight: 500; display: block; margin-top: 3px;">Foto, dictado por voz o descripción en 1 toque:</span>
+                </div>
+            </div>
+            <span class="badge rounded-pill" style="background: rgba(184, 243, 74, 0.16); color: #b8f34a; border: 1px solid rgba(184, 243, 74, 0.35); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; padding: 6px 11px;">
+                RÁPIDO
+            </span>
+        </div>
+
+        <div class="nutra-ai-btn-grid">
+            <button type="button" class="nutra-ai-action-btn" onclick="quickActionCamera()" aria-label="Sacar foto del plato con IA">
+                <div class="nutra-ai-action-icon camera">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
+                <span class="nutra-ai-action-label">Sacar foto</span>
+            </button>
+            <button type="button" class="nutra-ai-action-btn" onclick="quickActionAudio()" aria-label="Enviar audio con IA">
+                <div class="nutra-ai-action-icon audio">
+                    <i class="fa-solid fa-microphone"></i>
+                </div>
+                <span class="nutra-ai-action-label">Audio</span>
+            </button>
+            <button type="button" class="nutra-ai-action-btn" onclick="quickActionText()" aria-label="Describir plato con IA">
+                <div class="nutra-ai-action-icon text">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <span class="nutra-ai-action-label">Describir</span>
+            </button>
+        </div>
+
+        <button type="button" class="btn btn-link w-100 text-center p-0 mt-3 text-decoration-none d-flex align-items-center justify-content-center gap-1.5" style="color: #b8f34a; font-size: 0.8rem; font-weight: 700;" onclick="switchToAssistantFromQuickAdd()">
+            <span>Ver opciones avanzadas del asistente</span>
+            <i class="fa-solid fa-arrow-right" style="font-size: 0.72rem;"></i>
+        </button>
     </div>
-    <div class="input-group mb-3">
-        <span class="input-group-text bg-white border-end-0 rounded-start-4 ps-3 text-secondary" style="border-color: rgba(23,33,22,0.18);">
-            <i class="fa-solid fa-plus text-secondary"></i>
+
+    <!-- Divisor sutil y elegante -->
+    <div class="d-flex align-items-center gap-3 my-4">
+        <hr class="flex-grow-1 m-0" style="border-color: rgba(23, 33, 22, 0.12); opacity: 1;">
+        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #879482;">O BUSCAR MANUAL</span>
+        <hr class="flex-grow-1 m-0" style="border-color: rgba(23, 33, 22, 0.12); opacity: 1;">
+    </div>
+
+    <!-- Buscar alimento -->
+    <div style="font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #879482; margin-bottom: 8px;">
+        BUSCAR ALIMENTO
+    </div>
+    <div class="input-group mb-4">
+        <span class="input-group-text bg-white border-end-0 rounded-start-4 ps-3" style="border-color: rgba(23,33,22,0.14); color: #879482;">
+            <i class="fa-solid fa-magnifying-glass"></i>
         </span>
-        <input type="text" id="quickFoodSearchInput" class="form-control border-start-0 rounded-end-4 py-2 pe-3 bg-white text-dark" placeholder="Ej: banana, yogur, pollo..." style="border-color: rgba(23,33,22,0.18); font-size: 0.92rem;" oninput="handleQuickFoodSearch(event)">
+        <input type="text" id="quickFoodSearchInput" class="form-control border-start-0 rounded-end-4 py-2.5 pe-3 bg-white text-dark" placeholder="Ej: banana, yogur, pollo..." style="border-color: rgba(23,33,22,0.14); font-size: 0.92rem;" oninput="handleQuickFoodSearch(event)">
     </div>
 
     <!-- Live Search Results Container -->
@@ -1124,12 +1234,12 @@
 
     <!-- Agregados frecuentes -->
     <div id="frequentSection">
-        <div style="font-size: 0.82rem; font-weight: 700; color: #879482; margin-bottom: 10px;">
-            Agregados frecuentes
+        <div style="font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #879482; margin-bottom: 12px;">
+            AGREGADOS FRECUENTES
         </div>
         <div class="d-flex flex-column gap-2 mb-3">
             {% for food in frequent_foods %}
-                <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #ffffff; border: 1.5px solid rgba(23,33,22,0.08);">
                     <div>
                         <strong style="font-size: 0.95rem; color: #172116; display: block;">{{ food.name }}</strong>
                         <span style="font-size: 0.8rem; color: #879482; font-weight: 600;">{{ food.calories|floatformat:0 }} kcal</span>
@@ -1142,9 +1252,9 @@
         </div>
     </div>
 
-    <!-- Botón Agregar Alimento -->
-    <button type="button" id="btnCustomFoodAdd" class="btn w-100 py-3 rounded-4 fw-bold mb-2" style="background: #8b9485; color: #ffffff; font-size: 0.95rem;" onclick="handleCustomFoodSubmit()">
-        + Agregar alimento
+    <!-- Botón Agregar Alimento Manual -->
+    <button type="button" id="btnCustomFoodAdd" class="btn w-100 py-3 rounded-4 fw-bold mb-2" style="background: #172116; color: #ffffff; font-size: 0.95rem; border: none; box-shadow: 0 4px 14px rgba(23,33,22,0.15);" onclick="handleCustomFoodSubmit()">
+        <i class="fa-solid fa-plus me-1.5"></i> Agregar alimento manual
     </button>
 </dialog>
 
@@ -1702,6 +1812,24 @@
     function switchToAssistantFromQuickAdd() {
         closeAllModals(true);
         openAssistantModal(activeQuickMealType);
+    }
+
+    function quickActionCamera() {
+        closeAllModals(true);
+        openAssistantModal(activeQuickMealType);
+        triggerNutraCamera();
+    }
+
+    function quickActionAudio() {
+        closeAllModals(true);
+        openAssistantModal(activeQuickMealType);
+        setTimeout(() => triggerNutraAudio(), 300);
+    }
+
+    function quickActionText() {
+        closeAllModals(true);
+        openAssistantModal(activeQuickMealType);
+        setTimeout(() => showNutraTextInput(), 200);
     }
 
     function openWeightModal() {
