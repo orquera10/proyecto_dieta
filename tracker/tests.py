@@ -480,6 +480,9 @@ class PolishAndPasskeyTests(TestCase):
         self.assertEqual(dash_after.context['start_weight'], Decimal('100.0'))
         self.assertEqual(dash_after.context['current_weight'], Decimal('99.5'))
         self.assertEqual(dash_after.context['weight_lost'], Decimal('0.5'))
+        pts = dash_after.context['weight_points']
+        self.assertEqual(len(pts), 2)
+        self.assertGreaterEqual(pts[1]['y'] - pts[0]['y'], 30.0)
 
 
 

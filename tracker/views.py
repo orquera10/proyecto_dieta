@@ -355,37 +355,65 @@ def dashboard_view(request):
 
     chart_width = 720
     chart_height = 230
-    chart_padding = 24
+    chart_pad_left = 76
+    chart_pad_right = 40
+    chart_pad_top = 34
+    chart_pad_bottom = 42
+    plot_width = chart_width - chart_pad_left - chart_pad_right
+    plot_height = chart_height - chart_pad_top - chart_pad_bottom
+
     all_weights = [float(l.weight) for l in weight_logs] if weight_logs else [float(start_weight)]
-    min_chart_weight = min(all_weights + [float(target_weight)]) - 0.5
-    max_chart_weight = max(all_weights) + 0.5
-    weight_range = max(1.0, max_chart_weight - min_chart_weight)
+    raw_min = min(all_weights)
+    raw_max = max(all_weights)
+    raw_span = raw_max - raw_min
+    chart_pad_y = max(0.4, raw_span * 0.25)
+    min_chart_weight = raw_min - chart_pad_y
+    max_chart_weight = raw_max + chart_pad_y
+    weight_range = max(0.8, max_chart_weight - min_chart_weight)
+
+    chart_grid_top = f"{max_chart_weight:.1f}"
+    chart_grid_mid = f"{(max_chart_weight + min_chart_weight) / 2:.1f}"
+    chart_grid_bot = f"{min_chart_weight:.1f}"
 
     weight_points = []
     if weight_logs:
         for idx, l in enumerate(weight_logs):
-            x = chart_padding + (idx / max(len(weight_logs) - 1, 1)) * (chart_width - chart_padding * 2)
-            y = chart_padding + ((max_chart_weight - float(l.weight)) / weight_range) * (chart_height - chart_padding * 2)
+            if len(weight_logs) == 1:
+                x = chart_pad_left + plot_width / 2
+            else:
+                x = chart_pad_left + (idx / (len(weight_logs) - 1)) * plot_width
+            y = chart_pad_top + ((max_chart_weight - float(l.weight)) / weight_range) * plot_height
+            label_y = y - 14 if y > chart_pad_top + 22 else y + 22
             weight_points.append({
                 'id': l.id,
                 'week': idx + 1,
                 'date': l.date.strftime('%d %b'),
                 'weight': float(l.weight),
+                'weight_label': f"{float(l.weight):.1f}",
                 'x': round(x, 1),
                 'y': round(y, 1),
+                'label_y': round(label_y, 1),
             })
     else:
+        y_mid = chart_pad_top + plot_height / 2
         weight_points = [{
             'id': None,
             'week': 1,
             'date': timezone.localdate().strftime('%d %b'),
             'weight': float(start_weight),
-            'x': chart_padding,
-            'y': chart_height / 2,
+            'weight_label': f"{float(start_weight):.1f}",
+            'x': round(chart_pad_left + plot_width / 2, 1),
+            'y': round(y_mid, 1),
+            'label_y': round(y_mid - 14, 1),
         }]
 
+    chart_baseline_y = chart_height - chart_pad_bottom
     chart_line_points = " ".join([f"{p['x']},{p['y']}" for p in weight_points])
-    chart_area_points = f"{chart_padding},{chart_height - chart_padding} {chart_line_points} {chart_width - chart_padding},{chart_height - chart_padding}"
+    chart_area_points = (
+        f"{weight_points[0]['x']},{chart_baseline_y} "
+        f"{chart_line_points} "
+        f"{weight_points[-1]['x']},{chart_baseline_y}"
+    )
     recent_weight_entries = list(reversed(weight_points))[:20] if weight_logs else []
 
     # Daily weight log for today
@@ -489,6 +517,9 @@ def dashboard_view(request):
         'avg_weekly_lost': round(avg_weekly_lost, 1),
         'chart_line_points': chart_line_points,
         'chart_area_points': chart_area_points,
+        'chart_grid_top': chart_grid_top,
+        'chart_grid_mid': chart_grid_mid,
+        'chart_grid_bot': chart_grid_bot,
         'weight_points': weight_points,
         'recent_weight_entries': recent_weight_entries,
         'pending_meal_code': get_next_pending_meal([m['code'] for m in meals_data if m['has_entries']]),

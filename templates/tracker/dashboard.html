@@ -967,16 +967,19 @@
             </div>
 
             <div style="width: 100%; overflow: hidden;">
-                <svg viewBox="0 0 720 230" style="width: 100%; height: 180px;">
+                <svg viewBox="0 0 720 230" style="width: 100%; height: 195px;">
                     <defs>
                         <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stop-color="#b8f34a" stop-opacity="0.45"/>
                             <stop offset="100%" stop-color="#b8f34a" stop-opacity="0.0"/>
                         </linearGradient>
                     </defs>
-                    <line x1="24" x2="696" y1="60" y2="60" stroke="#172116" stroke-opacity="0.06" stroke-dasharray="4 6"/>
-                    <line x1="24" x2="696" y1="120" y2="120" stroke="#172116" stroke-opacity="0.06" stroke-dasharray="4 6"/>
-                    <line x1="24" x2="696" y1="180" y2="180" stroke="#172116" stroke-opacity="0.06" stroke-dasharray="4 6"/>
+                    <text x="8" y="38" fill="#879482" font-size="11" font-weight="700">{{ chart_grid_top }} kg</text>
+                    <line x1="64" x2="694" y1="34" y2="34" stroke="#172116" stroke-opacity="0.08" stroke-dasharray="4 6"/>
+                    <text x="8" y="115" fill="#879482" font-size="11" font-weight="700">{{ chart_grid_mid }} kg</text>
+                    <line x1="64" x2="694" y1="111" y2="111" stroke="#172116" stroke-opacity="0.08" stroke-dasharray="4 6"/>
+                    <text x="8" y="192" fill="#879482" font-size="11" font-weight="700">{{ chart_grid_bot }} kg</text>
+                    <line x1="64" x2="694" y1="188" y2="188" stroke="#172116" stroke-opacity="0.08" stroke-dasharray="4 6"/>
                     
                     {% if chart_area_points %}
                         <polygon points="{{ chart_area_points }}" fill="url(#weightAreaGrad)"/>
@@ -984,7 +987,8 @@
                         {% for pt in weight_points %}
                             <circle cx="{{ pt.x|unlocalize }}" cy="{{ pt.y|unlocalize }}" r="8" fill="#ffffff" stroke="#79a522" stroke-width="3"/>
                             <circle cx="{{ pt.x|unlocalize }}" cy="{{ pt.y|unlocalize }}" r="4" fill="#79a522"/>
-                            <text x="{{ pt.x|unlocalize }}" y="215" text-anchor="middle" fill="#879482" font-size="12" font-weight="700">S{{ pt.week }}</text>
+                            <text x="{{ pt.x|unlocalize }}" y="{{ pt.label_y|unlocalize }}" text-anchor="middle" fill="#172116" font-size="12" font-weight="800">{{ pt.weight_label }}</text>
+                            <text x="{{ pt.x|unlocalize }}" y="216" text-anchor="middle" fill="#879482" font-size="12" font-weight="700">S{{ pt.week }}</text>
                         {% endfor %}
                     {% endif %}
                 </svg>
