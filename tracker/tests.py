@@ -442,6 +442,46 @@ class PolishAndPasskeyTests(TestCase):
         self.assertNotEqual(idx_search_input, -1)
         self.assertLess(idx_ia_btn, idx_search_input, "IA button must be located above the food search input in quickAddSheet")
 
+    def test_weight_log_redirect_and_delete(self):
+        from .models import WeightLog
+        from decimal import Decimal
+        import datetime
+
+        self.client.login(username='biouser', password='password123')
+
+        # Seed an unwanted older 80 kg entry and real 100 -> 99.5 progression
+        bad_log = WeightLog.objects.create(user=self.user, date=datetime.date(2026, 11, 1), weight=Decimal('80.0'))
+        WeightLog.objects.create(user=self.user, date=datetime.date(2026, 11, 10), weight=Decimal('100.0'))
+
+        # Logging new weight from Progreso modal redirects back to /dashboard/?tab=progreso
+        post_res = self.client.post(reverse('weight_tracker'), data={
+            'weight': '99.5',
+            'date': '2026-11-17',
+            'next': '/dashboard/?tab=progreso',
+        })
+        self.assertRedirects(post_res, '/dashboard/?tab=progreso', fetch_redirect_response=False)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.current_weight, Decimal('99.5'))
+
+        # Dashboard renders delete form for bad_log and unlocalized weight in modal
+        dash_res = self.client.get('/dashboard/?tab=progreso')
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertContains(dash_res, f'/weight/delete/{bad_log.id}/')
+        self.assertContains(dash_res, 'value="99.5"')
+
+        # Deleting bad_log removes 80 kg and fixes start_weight/weight_lost
+        del_res = self.client.post(reverse('delete_weight_log', args=[bad_log.id]), data={
+            'next': '/dashboard/?tab=progreso',
+        })
+        self.assertRedirects(del_res, '/dashboard/?tab=progreso', fetch_redirect_response=False)
+        self.assertFalse(WeightLog.objects.filter(pk=bad_log.id).exists())
+
+        dash_after = self.client.get('/dashboard/?tab=progreso')
+        self.assertEqual(dash_after.context['start_weight'], Decimal('100.0'))
+        self.assertEqual(dash_after.context['current_weight'], Decimal('99.5'))
+        self.assertEqual(dash_after.context['weight_lost'], Decimal('0.5'))
+
+
 
 
 

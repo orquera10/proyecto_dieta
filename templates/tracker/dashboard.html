@@ -1021,14 +1021,25 @@
         <div class="stat-card-white mt-3">
             <h3 style="font-size: 1.15rem; font-weight: 800; color: #172116; margin-bottom: 12px;">Últimos registros</h3>
             {% for entry in recent_weight_entries %}
-                <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-secondary border-opacity-10 last:border-0">
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-secondary border-opacity-10 last:border-0 gap-2">
                     <div>
                         <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Semana {{ entry.week }}</strong>
                         <span style="font-size: 0.78rem; color: #879482;">{{ entry.date }}</span>
                     </div>
-                    <div class="text-end">
-                        <strong class="d-block" style="font-size: 1rem; color: #172116; font-weight: 900;">{{ entry.weight }} kg</strong>
-                        <span style="font-size: 0.75rem; color: #5d8118; font-weight: 700;">Registro guardado</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-end">
+                            <strong class="d-block" style="font-size: 1rem; color: #172116; font-weight: 900;">{{ entry.weight }} kg</strong>
+                            <span style="font-size: 0.75rem; color: #5d8118; font-weight: 700;">Registro guardado</span>
+                        </div>
+                        {% if entry.id %}
+                        <form method="post" action="{% url 'delete_weight_log' entry.id %}" class="m-0" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar pesaje?', message: 'Se borrará el registro de {{ entry.weight }} kg ({{ entry.date }}).', confirmText: 'Eliminar', tone: 'danger' });">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'dashboard' %}?tab=progreso">
+                            <button type="submit" class="btn btn-sm rounded-circle p-2 text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none; display: inline-flex; align-items: center; justify-content: center;" title="Eliminar pesaje" aria-label="Eliminar pesaje de {{ entry.weight }} kg">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             {% empty %}
@@ -1488,7 +1499,7 @@
                 <input type="hidden" name="next" value="{% url 'dashboard' %}?tab=progreso">
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-secondary">Peso (kg)</label>
-                    <input type="number" step="0.1" name="weight" class="form-control form-control-lg rounded-3 fw-bold" value="{{ current_weight }}" required>
+                    <input type="number" step="0.1" name="weight" class="form-control form-control-lg rounded-3 fw-bold" value="{{ current_weight|unlocalize }}" required>
                 </div>
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-secondary">Fecha</label>

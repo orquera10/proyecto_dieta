@@ -74,6 +74,7 @@
                             <th class="ps-3">Fecha</th>
                             <th>Peso (kg)</th>
                             <th>Notas</th>
+                            <th class="text-end pe-3">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -82,10 +83,18 @@
                             <td class="ps-3 fw-bold">{{ log.date|date:"d M Y" }}</td>
                             <td class="text-success font-monospace fs-6">{{ log.weight }} kg</td>
                             <td class="text-secondary small">{{ log.notes|default:"-" }}</td>
+                            <td class="text-end pe-3">
+                                <form method="post" action="{% url 'delete_weight_log' log.id %}" class="m-0 d-inline" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar pesaje?', message: 'Se borrará el registro de {{ log.weight }} kg.', confirmText: 'Eliminar', tone: 'danger' });">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2" title="Eliminar">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="3" class="text-center py-4 text-secondary">
+                            <td colspan="4" class="text-center py-4 text-secondary">
                                 No hay registros de peso aún. ¡Comienza registrando tu peso de hoy!
                             </td>
                         </tr>

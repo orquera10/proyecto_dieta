@@ -14,6 +14,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.db.models import Q
 from .models import UserProfile, FoodItem, MealEntry, WeightLog, PasskeyCredential
 from .forms import UserProfileForm, FoodItemForm, MealEntryForm, WeightLogForm, RegisterForm
@@ -343,7 +344,7 @@ def dashboard_view(request):
 
     # Weekly Weight Progress calculation for Figma Progreso tab
     weight_logs = list(WeightLog.objects.filter(user=request.user).order_by('date'))
-    start_weight = weight_logs[0].weight if weight_logs else (profile.target_weight or Decimal('72.0'))
+    start_weight = weight_logs[0].weight if weight_logs else (profile.current_weight or profile.target_weight or Decimal('72.0'))
     current_weight = weight_logs[-1].weight if weight_logs else start_weight
     target_weight = profile.target_weight or Decimal('64.0')
     weight_lost = max(Decimal('0.0'), start_weight - current_weight)
@@ -366,6 +367,7 @@ def dashboard_view(request):
             x = chart_padding + (idx / max(len(weight_logs) - 1, 1)) * (chart_width - chart_padding * 2)
             y = chart_padding + ((max_chart_weight - float(l.weight)) / weight_range) * (chart_height - chart_padding * 2)
             weight_points.append({
+                'id': l.id,
                 'week': idx + 1,
                 'date': l.date.strftime('%d %b'),
                 'weight': float(l.weight),
@@ -374,6 +376,7 @@ def dashboard_view(request):
             })
     else:
         weight_points = [{
+            'id': None,
             'week': 1,
             'date': timezone.localdate().strftime('%d %b'),
             'weight': float(start_weight),
@@ -383,7 +386,7 @@ def dashboard_view(request):
 
     chart_line_points = " ".join([f"{p['x']},{p['y']}" for p in weight_points])
     chart_area_points = f"{chart_padding},{chart_height - chart_padding} {chart_line_points} {chart_width - chart_padding},{chart_height - chart_padding}"
-    recent_weight_entries = list(reversed(weight_points))[:6]
+    recent_weight_entries = list(reversed(weight_points))[:20] if weight_logs else []
 
     # Daily weight log for today
     daily_weight = WeightLog.objects.filter(user=request.user, date=selected_date).first()
@@ -678,9 +681,21 @@ def profile_settings_view(request):
     return render(request, 'tracker/profile_settings.html', context)
 
 
+def _get_safe_next_url(request):
+    next_url = request.POST.get('next', '').strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return None
+
+
 @login_required
 def weight_tracker_view(request):
     if request.method == 'POST':
+        safe_next = _get_safe_next_url(request)
         form = WeightLogForm(request.POST)
         if form.is_valid():
             log = form.save(commit=False)
@@ -691,12 +706,15 @@ def weight_tracker_view(request):
                 date=log.date,
                 defaults={'weight': log.weight, 'notes': log.notes}
             )
-            # Also update profile current_weight if date is today or recent
+            latest_log = WeightLog.objects.filter(user=request.user).order_by('-date').first()
             profile = request.user.profile
-            profile.current_weight = log.weight
-            profile.save()
+            profile.current_weight = latest_log.weight if latest_log else log.weight
+            profile.save(update_fields=['current_weight'])
             messages.success(request, f"Peso de {log.weight} kg registrado para {log.date}.")
-            return redirect('weight_tracker')
+            return redirect(safe_next or 'weight_tracker')
+        elif safe_next:
+            messages.error(request, "No se pudo guardar el peso. Verificá que el valor y la fecha sean válidos.")
+            return redirect(safe_next)
     else:
         today_log = WeightLog.objects.filter(user=request.user, date=timezone.localdate()).first()
         initial = {'date': timezone.localdate()}
@@ -707,6 +725,21 @@ def weight_tracker_view(request):
 
     logs = WeightLog.objects.filter(user=request.user).order_by('-date')
     return render(request, 'tracker/weight_tracker.html', {'form': form, 'logs': logs})
+
+
+@login_required
+def delete_weight_log_view(request, pk):
+    safe_next = _get_safe_next_url(request)
+    if request.method == 'POST':
+        log = get_object_or_404(WeightLog, pk=pk, user=request.user)
+        log.delete()
+        latest_log = WeightLog.objects.filter(user=request.user).order_by('-date').first()
+        if latest_log:
+            profile = request.user.profile
+            profile.current_weight = latest_log.weight
+            profile.save(update_fields=['current_weight'])
+        messages.success(request, "Registro de peso eliminado.")
+    return redirect(safe_next or 'weight_tracker')
 
 
 @login_required
