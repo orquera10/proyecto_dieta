@@ -277,7 +277,7 @@ def dashboard_view(request):
             entries_detail.append({
                 'id': e.id,
                 'name': e.food_item.name,
-                'quantity': e.quantity or 1,
+                'quantity': float(e.quantity or Decimal('1.0')),
                 'grams': float(e.grams_or_amount),
                 'calories': float(e.total_calories),
                 'protein': float(e.total_protein),
@@ -873,23 +873,24 @@ def api_adjust_meal_entry(request, pk):
         return JsonResponse({"error": "Método no permitido"}, status=405)
 
     import json
+    from decimal import InvalidOperation
     try:
         data = json.loads(request.body.decode('utf-8')) if request.body else {}
-        delta = int(data.get('delta', 0))
-    except (ValueError, TypeError):
+        delta = Decimal(str(data.get('delta', 0)))
+    except (ValueError, TypeError, InvalidOperation):
         return JsonResponse({"error": "Delta inválido"}, status=400)
 
-    if delta not in (-1, 1):
-        return JsonResponse({"error": "Delta debe ser 1 o -1"}, status=400)
+    if delta not in (Decimal('-1'), Decimal('-0.5'), Decimal('0.5'), Decimal('1')):
+        return JsonResponse({"error": "Delta debe ser ±0.5 o ±1"}, status=400)
 
     entry = get_object_or_404(MealEntry, pk=pk, user=request.user)
-    current_qty = max(1, int(entry.quantity or 1))
-    unit_grams = entry.grams_or_amount / Decimal(str(current_qty))
-    new_qty = max(1, current_qty + delta)
+    current_qty = max(Decimal('0.5'), entry.quantity or Decimal('1.0'))
+    unit_grams = entry.grams_or_amount / current_qty
+    new_qty = max(Decimal('0.5'), current_qty + delta)
 
     if new_qty != current_qty:
         entry.quantity = new_qty
-        entry.grams_or_amount = round(unit_grams * Decimal(str(new_qty)), 1)
+        entry.grams_or_amount = round(unit_grams * new_qty, 1)
         entry.save(update_fields=['quantity', 'grams_or_amount'])
 
     # Recalculate meal & day totals for live UI sync
@@ -906,7 +907,7 @@ def api_adjust_meal_entry(request, pk):
         "entry": {
             "id": entry.id,
             "name": entry.food_item.name,
-            "quantity": entry.quantity,
+            "quantity": float(entry.quantity),
             "grams": float(entry.grams_or_amount),
             "calories": float(entry.total_calories),
             "protein": float(entry.total_protein),

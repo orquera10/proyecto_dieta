@@ -1729,8 +1729,9 @@
         if (meal.entries && meal.entries.length > 0) {
             let html = '';
             meal.entries.forEach(e => {
-                const qty = e.quantity || 1;
-                const minusDisabled = qty <= 1 ? 'disabled style="width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(23,33,22,0.04); color: #b5bfb0; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: not-allowed;"' : 'style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #ffffff; color: #172116; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"';
+                const qty = Number(e.quantity || 1);
+                const qtyLabel = Number.isInteger(qty) ? String(qty) : qty.toFixed(1);
+                const minusDisabled = qty <= 0.5 ? 'disabled style="width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(23,33,22,0.04); color: #b5bfb0; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: not-allowed;"' : 'style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #ffffff; color: #172116; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"';
                 html += `
                     <div class="d-flex align-items-center justify-content-between p-3 rounded-4 gap-2" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
                         <div class="flex-grow-1 overflow-hidden pe-1">
@@ -1744,11 +1745,11 @@
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-shrink-0">
                             <div class="d-inline-flex align-items-center rounded-pill p-1" style="background: #f1f4ea; border: 1px solid rgba(23,33,22,0.08); gap: 6px;">
-                                <button type="button" ${minusDisabled} onclick="adjustMealEntryQuantity('${mealCode}', ${e.id}, -1)" aria-label="Restar porción">
+                                <button type="button" ${minusDisabled} onclick="adjustMealEntryQuantity('${mealCode}', ${e.id}, -0.5)" aria-label="Restar media porción">
                                     <i class="fa-solid fa-minus"></i>
                                 </button>
-                                <span style="min-width: 18px; text-align: center; font-size: 0.82rem; font-weight: 800; color: #172116;">${qty}</span>
-                                <button type="button" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #172116; color: #b8f34a; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer;" onclick="adjustMealEntryQuantity('${mealCode}', ${e.id}, 1)" aria-label="Sumar porción">
+                                <span style="min-width: 24px; text-align: center; font-size: 0.82rem; font-weight: 800; color: #172116;">${qtyLabel}</span>
+                                <button type="button" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #172116; color: #b8f34a; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer;" onclick="adjustMealEntryQuantity('${mealCode}', ${e.id}, 0.5)" aria-label="Sumar media porción">
                                     <i class="fa-solid fa-plus"></i>
                                 </button>
                             </div>

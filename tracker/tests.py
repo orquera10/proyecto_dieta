@@ -509,39 +509,48 @@ class PolishAndPasskeyTests(TestCase):
             quantity=1,
         )
 
-        # Increment quantity 1 -> 2
+        # Increment quantity 1.0 -> 1.5
         res_inc = self.client.post(
             reverse('api_adjust_meal_entry', args=[entry.id]),
-            data=json.dumps({'delta': 1}),
+            data=json.dumps({'delta': 0.5}),
             content_type='application/json',
         )
         self.assertEqual(res_inc.status_code, 200)
         d_inc = res_inc.json()
         self.assertTrue(d_inc['success'])
-        self.assertEqual(d_inc['entry']['quantity'], 2)
-        self.assertEqual(d_inc['entry']['grams'], 120.0)
+        self.assertEqual(d_inc['entry']['quantity'], 1.5)
+        self.assertEqual(d_inc['entry']['grams'], 90.0)
         entry.refresh_from_db()
-        self.assertEqual(entry.quantity, 2)
-        self.assertEqual(entry.grams_or_amount, Decimal('120.0'))
+        self.assertEqual(entry.quantity, Decimal('1.5'))
+        self.assertEqual(entry.grams_or_amount, Decimal('90.0'))
 
-        # Decrement quantity 2 -> 1
+        # Decrement quantity 1.5 -> 1.0 -> 0.5
         res_dec = self.client.post(
             reverse('api_adjust_meal_entry', args=[entry.id]),
-            data=json.dumps({'delta': -1}),
+            data=json.dumps({'delta': -0.5}),
             content_type='application/json',
         )
         self.assertEqual(res_dec.status_code, 200)
-        self.assertEqual(res_dec.json()['entry']['quantity'], 1)
+        self.assertEqual(res_dec.json()['entry']['quantity'], 1.0)
         self.assertEqual(res_dec.json()['entry']['grams'], 60.0)
 
-        # Clamps at 1
+        res_half = self.client.post(
+            reverse('api_adjust_meal_entry', args=[entry.id]),
+            data=json.dumps({'delta': -0.5}),
+            content_type='application/json',
+        )
+        self.assertEqual(res_half.status_code, 200)
+        self.assertEqual(res_half.json()['entry']['quantity'], 0.5)
+        self.assertEqual(res_half.json()['entry']['grams'], 30.0)
+
+        # Clamps at 0.5
         res_clamp = self.client.post(
             reverse('api_adjust_meal_entry', args=[entry.id]),
-            data=json.dumps({'delta': -1}),
+            data=json.dumps({'delta': -0.5}),
             content_type='application/json',
         )
         self.assertEqual(res_clamp.status_code, 200)
-        self.assertEqual(res_clamp.json()['entry']['quantity'], 1)
+        self.assertEqual(res_clamp.json()['entry']['quantity'], 0.5)
 
         # Dashboard has always-visible AI text box & stepper JS
         dash_res = self.client.get(reverse('dashboard'))
