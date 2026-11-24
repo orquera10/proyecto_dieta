@@ -1302,8 +1302,8 @@
     <input type="file" id="nutraCameraInput" accept="image/*" capture="camera" class="d-none" onchange="handleNutraPhotoSelected(event)">
     <input type="file" id="nutraGalleryInput" accept="image/*" class="d-none" onchange="handleNutraPhotoSelected(event)">
 
-    <!-- Inline Assistant Photo Preview & Input / Loading area (pinned above cards for instant visibility) -->
-    <div id="nutraAiActiveBox" class="d-none mb-3 p-3 rounded-4" style="background: rgba(23,33,22,0.04); border: 1.5px solid #cde986;">
+    <!-- Inline Assistant Photo Preview & Input / Loading area (always visible for instant text/photo entry) -->
+    <div id="nutraAiActiveBox" class="mb-3 p-3 rounded-4" style="background: rgba(23,33,22,0.04); border: 1.5px solid #cde986;">
         <div id="nutraPhotoPreviewBox" class="d-none align-items-center gap-2 mb-3 p-2 rounded-3" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
             <img id="nutraPhotoImg" src="" style="width: 56px; height: 56px; object-fit: cover; border-radius: 12px;">
             <div class="flex-grow-1 overflow-hidden" style="font-size: 0.82rem;">
@@ -1313,8 +1313,11 @@
             <button type="button" class="btn btn-sm text-danger p-1" onclick="clearNutraPhoto()" title="Quitar foto"><i class="fa-solid fa-trash"></i></button>
         </div>
 
+        <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #5d8118; margin-bottom: 8px;">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Escribir rápido con IA
+        </div>
         <div class="nutra-pill-input-wrap">
-            <input type="text" id="nutraAiInput" placeholder="Ej: bowl de pollo con arroz..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
+            <input type="text" id="nutraAiInput" placeholder="Ej: 2 huevos revueltos con tostada..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
             <button type="button" id="btnSubmitNutraAi" class="nutra-pill-submit" onclick="submitNutraAssistant()">
                 <span>Analizar</span>
             </button>
@@ -1355,19 +1358,6 @@
         <div>
             <strong class="d-block" style="font-size: 0.95rem; color: #172116;" id="audioTitle">Enviar audio</strong>
             <small style="color: #879482; font-size: 0.8rem;" id="audioSubtitle">Decilo con tus palabras</small>
-        </div>
-    </button>
-
-    <!-- Option 4: Escribir -->
-    <button type="button" class="assistant-card-btn" onclick="showNutraTextInput()">
-        <div class="assistant-icon-box">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#172116">
-                <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
-            </svg>
-        </div>
-        <div>
-            <strong class="d-block" style="font-size: 0.95rem; color: #172116;">Escribir</strong>
-            <small style="color: #879482; font-size: 0.8rem;">Describí lo que comiste</small>
         </div>
     </button>
 
@@ -1720,13 +1710,30 @@
         }
 
         // Render entries list
+        renderMealDetailItems(mealCode, meal);
+
+        const dlg = document.getElementById('mealDetailSheet');
+        if (dlg && !dlg.open) dlg.showModal();
+        pushModalHistory('mealDetailSheet');
+    }
+
+    let mealAdjustedNeedsReload = false;
+
+    function renderMealDetailItems(mealCode, meal) {
+        document.getElementById('mealDetailCals').innerText = meal.subtotal_cal + ' kcal';
+        document.getElementById('mealDetailProt').innerText = Math.round(meal.subtotal_prot);
+        document.getElementById('mealDetailCarbs').innerText = Math.round(meal.subtotal_carbs);
+        document.getElementById('mealDetailFat').innerText = Math.round(meal.subtotal_fat);
+
         const listContainer = document.getElementById('mealDetailItemsList');
         if (meal.entries && meal.entries.length > 0) {
             let html = '';
             meal.entries.forEach(e => {
+                const qty = e.quantity || 1;
+                const minusDisabled = qty <= 1 ? 'disabled style="width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(23,33,22,0.04); color: #b5bfb0; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: not-allowed;"' : 'style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #ffffff; color: #172116; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"';
                 html += `
-                    <div class="d-flex align-items-center justify-content-between p-3 rounded-4" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
-                        <div class="flex-grow-1 overflow-hidden pe-2">
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded-4 gap-2" style="background: #ffffff; border: 1px solid rgba(23,33,22,0.08);">
+                        <div class="flex-grow-1 overflow-hidden pe-1">
                             <strong style="font-size: 0.95rem; color: #172116; display: block;" class="text-truncate">${e.name}</strong>
                             <div style="font-size: 0.8rem; color: #879482; font-weight: 600;">
                                 <span>${Math.round(e.grams)}g • <strong>${Math.round(e.calories)} kcal</strong></span>
@@ -1735,12 +1742,23 @@
                                 P: ${Math.round(e.protein)}g • C: ${Math.round(e.carbs)}g • G: ${Math.round(e.fat)}g
                             </div>
                         </div>
-                        <form method="post" action="/meal/delete/${e.id}/" style="margin: 0;" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar alimento?', message: 'Se quitará este alimento del registro del día.', confirmText: 'Eliminar', tone: 'danger' });">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                            <button type="submit" class="btn btn-sm rounded-circle p-2 text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none; display: flex; align-items: center; justify-content: center;" title="Eliminar alimento">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </form>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <div class="d-inline-flex align-items-center rounded-pill p-1" style="background: #f1f4ea; border: 1px solid rgba(23,33,22,0.08); gap: 6px;">
+                                <button type="button" ${minusDisabled} onclick="adjustMealEntryQuantity('${mealCode}', ${e.id}, -1)" aria-label="Restar porción">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <span style="min-width: 18px; text-align: center; font-size: 0.82rem; font-weight: 800; color: #172116;">${qty}</span>
+                                <button type="button" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #172116; color: #b8f34a; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer;" onclick="adjustMealEntryQuantity('${mealCode}', ${e.id}, 1)" aria-label="Sumar porción">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                            <form method="post" action="/meal/delete/${e.id}/" style="margin: 0;" onsubmit="return nutraConfirmForm(event, { title: '¿Eliminar alimento?', message: 'Se quitará este alimento del registro del día.', confirmText: 'Eliminar', tone: 'danger' });">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                <button type="submit" class="btn btn-sm rounded-circle p-2 text-danger" style="background: rgba(239,68,68,0.1); width: 34px; height: 34px; border: none; display: flex; align-items: center; justify-content: center;" title="Eliminar alimento">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 `;
             });
@@ -1748,11 +1766,58 @@
         } else {
             listContainer.innerHTML = '<p class="text-muted small m-0 text-center py-2">No hay alimentos registrados en esta comida.</p>';
         }
-
-        const dlg = document.getElementById('mealDetailSheet');
-        if (dlg && !dlg.open) dlg.showModal();
-        pushModalHistory('mealDetailSheet');
     }
+
+    async function adjustMealEntryQuantity(mealCode, entryId, delta) {
+        try {
+            const resp = await fetch(`/api/meal/adjust/${entryId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ delta })
+            });
+            const data = await resp.json();
+            if (!data.success) return;
+
+            mealAdjustedNeedsReload = true;
+            const meal = mealsDataMap[mealCode];
+            if (meal) {
+                meal.subtotal_cal = data.meal.subtotal_cal;
+                meal.subtotal_prot = data.meal.subtotal_prot;
+                meal.subtotal_carbs = data.meal.subtotal_carbs;
+                meal.subtotal_fat = data.meal.subtotal_fat;
+                const idx = meal.entries.findIndex(item => item.id === entryId);
+                if (idx !== -1) {
+                    meal.entries[idx] = {
+                        ...meal.entries[idx],
+                        quantity: data.entry.quantity,
+                        grams: data.entry.grams,
+                        calories: data.entry.calories,
+                        protein: data.entry.protein,
+                        carbs: data.entry.carbs,
+                        fat: data.entry.fat
+                    };
+                }
+                renderMealDetailItems(mealCode, meal);
+            }
+        } catch (err) {
+            console.error('Error adjusting meal quantity:', err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailDlg = document.getElementById('mealDetailSheet');
+        if (detailDlg) {
+            detailDlg.addEventListener('close', () => {
+                if (mealAdjustedNeedsReload) {
+                    mealAdjustedNeedsReload = false;
+                    window.location.reload();
+                }
+            });
+        }
+    });
 
     function closeMealDetailModal() {
         closeDialogSafely('mealDetailSheet', false);
@@ -1803,6 +1868,10 @@
             userManuallyPickedAssistantMeal = false;
             selectAssistantMeal(defaultPendingMealCode, false);
         }
+        const advBox = document.getElementById('nutraAdvisorActiveBox');
+        if (advBox) advBox.classList.add('d-none');
+        const aiBox = document.getElementById('nutraAiActiveBox');
+        if (aiBox) aiBox.classList.remove('d-none');
         const dlg = document.getElementById('assistantSheet');
         if (dlg && !dlg.open) dlg.showModal();
         pushModalHistory('assistantSheet');
@@ -2202,6 +2271,8 @@
     function hideNutraAdvisor() {
         const advBox = document.getElementById('nutraAdvisorActiveBox');
         if (advBox) advBox.classList.add('d-none');
+        const aiBox = document.getElementById('nutraAiActiveBox');
+        if (aiBox) aiBox.classList.remove('d-none');
     }
 
     function selectAdvisorChip(queryText) {

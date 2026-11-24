@@ -19,6 +19,7 @@ urlpatterns = [
     path('weight/delete/<int:pk>/', views.delete_weight_log_view, name='delete_weight_log'),
     path('api/foods/search/', views.api_food_search, name='api_food_search'),
     path('api/meal/quick-add/', views.api_quick_add_meal, name='api_quick_add_meal'),
+    path('api/meal/adjust/<int:pk>/', views.api_adjust_meal_entry, name='api_adjust_meal_entry'),
     path('api/ai/parse-meal/', views.ai_parse_meal_view, name='ai_parse_meal'),
     path('api/ai/estimate-food/', views.ai_estimate_food_view, name='ai_estimate_food'),
     path('api/ai/calculate-deficit/', views.ai_calculate_deficit_view, name='ai_calculate_deficit'),

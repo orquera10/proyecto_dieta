@@ -484,6 +484,72 @@ class PolishAndPasskeyTests(TestCase):
         self.assertEqual(len(pts), 2)
         self.assertGreaterEqual(pts[1]['y'] - pts[0]['y'], 30.0)
 
+    def test_meal_entry_adjust_quantity_and_assistant_text_visible(self):
+        from .models import FoodItem, MealEntry
+        from decimal import Decimal
+        from django.utils import timezone
+        import json
+
+        self.client.login(username='biouser', password='password123')
+        egg = FoodItem.objects.create(
+            user=self.user,
+            name='Huevo duro',
+            serving_size=Decimal('100.0'),
+            calories=Decimal('155.0'),
+            protein=Decimal('13.0'),
+            carbs=Decimal('1.1'),
+            fat=Decimal('11.0'),
+        )
+        entry = MealEntry.objects.create(
+            user=self.user,
+            date=timezone.localdate(),
+            meal_type='desayuno',
+            food_item=egg,
+            grams_or_amount=Decimal('60.0'),
+            quantity=1,
+        )
+
+        # Increment quantity 1 -> 2
+        res_inc = self.client.post(
+            reverse('api_adjust_meal_entry', args=[entry.id]),
+            data=json.dumps({'delta': 1}),
+            content_type='application/json',
+        )
+        self.assertEqual(res_inc.status_code, 200)
+        d_inc = res_inc.json()
+        self.assertTrue(d_inc['success'])
+        self.assertEqual(d_inc['entry']['quantity'], 2)
+        self.assertEqual(d_inc['entry']['grams'], 120.0)
+        entry.refresh_from_db()
+        self.assertEqual(entry.quantity, 2)
+        self.assertEqual(entry.grams_or_amount, Decimal('120.0'))
+
+        # Decrement quantity 2 -> 1
+        res_dec = self.client.post(
+            reverse('api_adjust_meal_entry', args=[entry.id]),
+            data=json.dumps({'delta': -1}),
+            content_type='application/json',
+        )
+        self.assertEqual(res_dec.status_code, 200)
+        self.assertEqual(res_dec.json()['entry']['quantity'], 1)
+        self.assertEqual(res_dec.json()['entry']['grams'], 60.0)
+
+        # Clamps at 1
+        res_clamp = self.client.post(
+            reverse('api_adjust_meal_entry', args=[entry.id]),
+            data=json.dumps({'delta': -1}),
+            content_type='application/json',
+        )
+        self.assertEqual(res_clamp.status_code, 200)
+        self.assertEqual(res_clamp.json()['entry']['quantity'], 1)
+
+        # Dashboard has always-visible AI text box & stepper JS
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertContains(dash_res, 'id="nutraAiActiveBox" class="mb-3')
+        self.assertContains(dash_res, 'adjustMealEntryQuantity')
+
+
 
 
 

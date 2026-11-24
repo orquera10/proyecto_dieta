@@ -277,6 +277,7 @@ def dashboard_view(request):
             entries_detail.append({
                 'id': e.id,
                 'name': e.food_item.name,
+                'quantity': e.quantity or 1,
                 'grams': float(e.grams_or_amount),
                 'calories': float(e.total_calories),
                 'protein': float(e.total_protein),
@@ -863,6 +864,63 @@ def api_quick_add_meal(request):
         })
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def api_adjust_meal_entry(request, pk):
+    """Incrementa o decrementa la cantidad (porciones) de un alimento registrado."""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    import json
+    try:
+        data = json.loads(request.body.decode('utf-8')) if request.body else {}
+        delta = int(data.get('delta', 0))
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Delta inválido"}, status=400)
+
+    if delta not in (-1, 1):
+        return JsonResponse({"error": "Delta debe ser 1 o -1"}, status=400)
+
+    entry = get_object_or_404(MealEntry, pk=pk, user=request.user)
+    current_qty = max(1, int(entry.quantity or 1))
+    unit_grams = entry.grams_or_amount / Decimal(str(current_qty))
+    new_qty = max(1, current_qty + delta)
+
+    if new_qty != current_qty:
+        entry.quantity = new_qty
+        entry.grams_or_amount = round(unit_grams * Decimal(str(new_qty)), 1)
+        entry.save(update_fields=['quantity', 'grams_or_amount'])
+
+    # Recalculate meal & day totals for live UI sync
+    meal_entries = MealEntry.objects.filter(
+        user=request.user, date=entry.date, meal_type=entry.meal_type
+    ).select_related('food_item')
+    meal_cal = int(round(sum((e.total_calories for e in meal_entries), Decimal('0.0')), 0))
+    meal_prot = float(round(sum((e.total_protein for e in meal_entries), Decimal('0.0')), 1))
+    meal_carbs = float(round(sum((e.total_carbs for e in meal_entries), Decimal('0.0')), 1))
+    meal_fat = float(round(sum((e.total_fat for e in meal_entries), Decimal('0.0')), 1))
+
+    return JsonResponse({
+        "success": True,
+        "entry": {
+            "id": entry.id,
+            "name": entry.food_item.name,
+            "quantity": entry.quantity,
+            "grams": float(entry.grams_or_amount),
+            "calories": float(entry.total_calories),
+            "protein": float(entry.total_protein),
+            "carbs": float(entry.total_carbs),
+            "fat": float(entry.total_fat),
+        },
+        "meal": {
+            "code": entry.meal_type,
+            "subtotal_cal": meal_cal,
+            "subtotal_prot": meal_prot,
+            "subtotal_carbs": meal_carbs,
+            "subtotal_fat": meal_fat,
+        },
+    })
 
 
 

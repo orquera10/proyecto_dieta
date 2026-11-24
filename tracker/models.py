@@ -152,6 +152,10 @@ class MealEntry(models.Model):
         default=Decimal('100.0'),
         verbose_name="Cantidad consumida (g/ml)"
     )
+    quantity = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Cantidad / Porciones"
+    )
     photo = models.ImageField(upload_to='meal_photos/', blank=True, null=True, verbose_name="Foto de la comida")
     photo_data = models.TextField(blank=True, default='', verbose_name="Foto persistente (base64 JPEG)")
     created_at = models.DateTimeField(auto_now_add=True)
