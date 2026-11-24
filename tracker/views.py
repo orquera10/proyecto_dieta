@@ -815,13 +815,18 @@ def api_quick_add_meal(request):
         calories = body.get('calories')
         meal_type = body.get('meal_type', 'almuerzo')
         date_str = body.get('date')
-        grams = Decimal(str(body.get('grams', 100)))
+        raw_grams = body.get('grams', 100)
+        grams = Decimal(str(raw_grams if raw_grams is not None else 100))
 
         target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
 
         if food_id:
             food_obj = get_object_or_404(FoodItem, pk=food_id)
+            if grams <= 0:
+                grams = food_obj.serving_size if (food_obj.serving_size and food_obj.serving_size > 0) else Decimal('100.0')
         elif name:
+            if grams <= 0:
+                grams = Decimal('100.0')
             food_obj = FoodItem.objects.filter(
                 Q(user=request.user) | Q(user__isnull=True),
                 name__iexact=name.strip()

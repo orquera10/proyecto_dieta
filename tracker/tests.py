@@ -552,11 +552,23 @@ class PolishAndPasskeyTests(TestCase):
         self.assertEqual(res_clamp.status_code, 200)
         self.assertEqual(res_clamp.json()['entry']['quantity'], 0.5)
 
-        # Dashboard has always-visible AI text box & stepper JS
+        # Dashboard has always-visible AI text box, hold-to-talk mic, unlocalized quick-add calories, & stepper JS
         dash_res = self.client.get(reverse('dashboard'))
         self.assertEqual(dash_res.status_code, 200)
         self.assertContains(dash_res, 'id="nutraAiActiveBox" class="mb-3')
+        self.assertContains(dash_res, 'id="btnHoldMicInline"')
+        self.assertContains(dash_res, 'startHoldToTalk')
         self.assertContains(dash_res, 'adjustMealEntryQuantity')
+        self.assertNotContains(dash_res, ',0)" title="Añadir')
+
+        # api_quick_add_meal guards against grams=0 and preserves food calories
+        qa_res = self.client.post(
+            reverse('api_quick_add_meal'),
+            data=json.dumps({'food_id': egg.id, 'meal_type': 'desayuno', 'grams': 0}),
+            content_type='application/json',
+        )
+        self.assertEqual(qa_res.status_code, 200)
+        self.assertGreater(qa_res.json()['calories'], 0)
 
 
 

@@ -444,6 +444,29 @@
     .nutra-pill-submit:disabled {
         opacity: 0.6;
     }
+    .nutra-mic-hold-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: #eef4e0;
+        color: #172116;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        transition: transform 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+    }
+    .nutra-mic-hold-btn.recording {
+        background: #ef4444 !important;
+        color: #ffffff !important;
+        transform: scale(1.08);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.24);
+    }
     .assistant-card-btn {
         background: #ffffff;
         border: 1px solid rgba(23, 33, 22, 0.08);
@@ -1259,7 +1282,7 @@
                         <strong style="font-size: 0.95rem; color: #172116; display: block;">{{ food.name }}</strong>
                         <span style="font-size: 0.8rem; color: #879482; font-weight: 600;">{{ food.calories|floatformat:0 }} kcal</span>
                     </div>
-                    <button type="button" class="btn-quick-add-plus" onclick="submitQuickFood({{ food.id }}, '{{ food.name|escapejs }}', {{ food.calories }})" title="Añadir {{ food.name }}">
+                    <button type="button" class="btn-quick-add-plus" onclick="submitQuickFood({{ food.id }}, '{{ food.name|escapejs }}', {{ food.calories|unlocalize }}, {{ food.serving_size|default:100|unlocalize }})" title="Añadir {{ food.name }}">
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
@@ -1314,13 +1337,19 @@
         </div>
 
         <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #5d8118; margin-bottom: 8px;">
-            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Escribir rápido con IA
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Escribir o dictar rápido con IA
         </div>
         <div class="nutra-pill-input-wrap">
             <input type="text" id="nutraAiInput" placeholder="Ej: 2 huevos revueltos con tostada..." onkeydown="if(event.key === 'Enter') submitNutraAssistant()">
+            <button type="button" id="btnHoldMicInline" class="nutra-mic-hold-btn" onpointerdown="startHoldToTalk(event)" onpointerup="stopHoldToTalk(event)" onpointercancel="stopHoldToTalk(event)" oncontextmenu="return false;" title="Mantené apretado para dictar" aria-label="Mantené apretado para dictar">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
             <button type="button" id="btnSubmitNutraAi" class="nutra-pill-submit" onclick="submitNutraAssistant()">
                 <span>Analizar</span>
             </button>
+        </div>
+        <div id="nutraVoiceStatus" style="font-size: 0.74rem; color: #6d7b68; font-weight: 600; margin-top: 6px; padding-left: 6px;">
+            <i class="fa-solid fa-hand-pointer me-1"></i> Mantené apretado el micrófono para dictar lo que comiste
         </div>
         <div id="nutraAiSpinner" class="d-none text-center mt-2 small text-success fw-semibold">
             <div class="spinner-border spinner-border-sm me-2"></div>
@@ -1350,14 +1379,14 @@
         </div>
     </button>
 
-    <!-- Option 3: Enviar Audio -->
-    <button type="button" class="assistant-card-btn" id="btnNutraAudio" onclick="triggerNutraAudio()">
+    <!-- Option 3: Enviar Audio (Hold-to-Talk) -->
+    <button type="button" class="assistant-card-btn" id="btnNutraAudio" style="touch-action: none; user-select: none; -webkit-user-select: none;" onpointerdown="startHoldToTalk(event)" onpointerup="stopHoldToTalk(event)" onpointercancel="stopHoldToTalk(event)" oncontextmenu="return false;">
         <div class="assistant-icon-box" id="audioIconBox">
             <i class="fa-solid fa-microphone"></i>
         </div>
         <div>
-            <strong class="d-block" style="font-size: 0.95rem; color: #172116;" id="audioTitle">Enviar audio</strong>
-            <small style="color: #879482; font-size: 0.8rem;" id="audioSubtitle">Decilo con tus palabras</small>
+            <strong class="d-block" style="font-size: 0.95rem; color: #172116;" id="audioTitle">Mantener para dictar</strong>
+            <small style="color: #879482; font-size: 0.8rem;" id="audioSubtitle">Mantené apretado y hablá; soltá al terminar</small>
         </div>
     </button>
 
@@ -2151,52 +2180,132 @@
         if (inp && focusInput) inp.focus({ preventScroll: true });
     }
 
-    // Audio Speech Recognition
+    // Audio Speech Recognition (Hold-to-Talk + fallback)
     let nutraSpeechRec = null;
     let isNutraRecording = false;
+    let nutraSpeechBaseText = '';
 
-    function triggerNutraAudio() {
+    function _ensureSpeechRec() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRec) {
+        if (!SpeechRec) return null;
+        if (!nutraSpeechRec) {
+            nutraSpeechRec = new SpeechRec();
+            nutraSpeechRec.lang = 'es-AR';
+            nutraSpeechRec.continuous = true;
+            nutraSpeechRec.interimResults = true;
+            nutraSpeechRec.onresult = (evt) => {
+                let finalPart = '';
+                let interimPart = '';
+                for (let i = 0; i < evt.results.length; i++) {
+                    const tr = evt.results[i][0].transcript;
+                    if (evt.results[i].isFinal) {
+                        finalPart += (finalPart ? ' ' : '') + tr.trim();
+                    } else {
+                        interimPart += (interimPart ? ' ' : '') + tr.trim();
+                    }
+                }
+                const combined = [nutraSpeechBaseText, finalPart, interimPart].filter(Boolean).join(' ').trim();
+                const input = document.getElementById('nutraAiInput');
+                if (input) input.value = combined;
+            };
+            nutraSpeechRec.onerror = () => stopNutraAudio();
+            nutraSpeechRec.onend = () => {
+                if (isNutraRecording) {
+                    stopNutraAudio();
+                }
+            };
+        }
+        return nutraSpeechRec;
+    }
+
+    function _setRecordingUi(active) {
+        const inlineMic = document.getElementById('btnHoldMicInline');
+        const statusEl = document.getElementById('nutraVoiceStatus');
+        const audioTitle = document.getElementById('audioTitle');
+        const audioSubtitle = document.getElementById('audioSubtitle');
+        const audioIconBox = document.getElementById('audioIconBox');
+
+        if (active) {
+            if (inlineMic) inlineMic.classList.add('recording');
+            if (statusEl) {
+                statusEl.innerHTML = '<i class="fa-solid fa-circle-dot me-1 text-danger"></i> Escuchando... soltá cuando termines';
+                statusEl.style.color = '#dc2626';
+            }
+            if (audioTitle) audioTitle.innerText = 'Escuchando...';
+            if (audioSubtitle) audioSubtitle.innerText = 'Soltá cuando termines de hablar';
+            if (audioIconBox) audioIconBox.style.background = '#f87171';
+        } else {
+            if (inlineMic) inlineMic.classList.remove('recording');
+            if (statusEl) {
+                statusEl.innerHTML = '<i class="fa-solid fa-hand-pointer me-1"></i> Mantené apretado el micrófono para dictar lo que comiste';
+                statusEl.style.color = '#6d7b68';
+            }
+            if (audioTitle) audioTitle.innerText = 'Mantener para dictar';
+            if (audioSubtitle) audioSubtitle.innerText = 'Mantené apretado y hablá; soltá al terminar';
+            if (audioIconBox) audioIconBox.style.background = '#e7f7c8';
+        }
+    }
+
+    function startHoldToTalk(evt) {
+        if (evt) {
+            evt.preventDefault();
+            try {
+                if (evt.currentTarget && evt.pointerId !== undefined) {
+                    evt.currentTarget.setPointerCapture(evt.pointerId);
+                }
+            } catch (e) {}
+        }
+        const rec = _ensureSpeechRec();
+        if (!rec) {
             nutraAlert({ title: 'Dictado no disponible', message: 'El dictado por voz no está soportado en este navegador web. Podés usar el teclado o la cámara.', tone: 'info' });
             showNutraTextInput();
             return;
         }
+        if (isNutraRecording) return;
 
-        if (!nutraSpeechRec) {
-            nutraSpeechRec = new SpeechRec();
-            nutraSpeechRec.lang = 'es-ES';
-            nutraSpeechRec.continuous = false;
-            nutraSpeechRec.interimResults = false;
-            nutraSpeechRec.onresult = (evt) => {
-                const text = evt.results[0][0].transcript;
-                const input = document.getElementById('nutraAiInput');
-                input.value = (input.value ? input.value + ' ' : '') + text;
-                stopNutraAudio();
-                showNutraTextInput();
-            };
-            nutraSpeechRec.onerror = () => stopNutraAudio();
-            nutraSpeechRec.onend = () => stopNutraAudio();
+        const input = document.getElementById('nutraAiInput');
+        nutraSpeechBaseText = input ? input.value.trim() : '';
+        isNutraRecording = true;
+        _setRecordingUi(true);
+        showNutraTextInput(false);
+        try { rec.start(); } catch (e) {}
+    }
+
+    function stopHoldToTalk(evt) {
+        if (evt) {
+            try {
+                if (evt.currentTarget && evt.pointerId !== undefined && evt.currentTarget.hasPointerCapture(evt.pointerId)) {
+                    evt.currentTarget.releasePointerCapture(evt.pointerId);
+                }
+            } catch (e) {}
         }
+        if (!isNutraRecording) return;
+        stopNutraAudio();
+    }
 
+    function triggerNutraAudio() {
+        const rec = _ensureSpeechRec();
+        if (!rec) {
+            nutraAlert({ title: 'Dictado no disponible', message: 'El dictado por voz no está soportado en este navegador web. Podés usar el teclado o la cámara.', tone: 'info' });
+            showNutraTextInput();
+            return;
+        }
         if (isNutraRecording) {
             stopNutraAudio();
         } else {
+            const input = document.getElementById('nutraAiInput');
+            nutraSpeechBaseText = input ? input.value.trim() : '';
             isNutraRecording = true;
-            document.getElementById('audioTitle').innerText = 'Escuchando...';
-            document.getElementById('audioSubtitle').innerText = 'Hablá ahora claramente';
-            document.getElementById('audioIconBox').style.background = '#f87171';
-            showNutraTextInput();
-            try { nutraSpeechRec.start(); } catch(e) {}
+            _setRecordingUi(true);
+            showNutraTextInput(false);
+            try { rec.start(); } catch (e) {}
         }
     }
 
     function stopNutraAudio() {
         isNutraRecording = false;
-        document.getElementById('audioTitle').innerText = 'Enviar audio';
-        document.getElementById('audioSubtitle').innerText = 'Decilo con tus palabras';
-        document.getElementById('audioIconBox').style.background = '#e7f7c8';
-        try { nutraSpeechRec?.stop(); } catch(e) {}
+        _setRecordingUi(false);
+        try { nutraSpeechRec?.stop(); } catch (e) {}
     }
 
     async function submitNutraAssistant() {
